@@ -18,7 +18,7 @@ func TestExpenseTemplateRepetitionCreatesFirstTwoOccurrences(t *testing.T) {
 	)
 
 	// Act
-	expenses := repository.GenerateRepeatingExpenses(
+	expenses, _ := repository.GenerateRepeatingExpenses(
 		expTpl,
 		model.DateRange{
 			From: model.Date(2026, time.June, 1),
