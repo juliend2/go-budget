@@ -18,20 +18,18 @@ func GenerateRepeatingExpenses(expTpl *model.ExpenseTemplate, dateRange model.Da
 	// And we're not concerned about filtering out paid expenses just yet, so if
 	// there are past unpaid expenses, we do want them in those results.
 	for cTime.Lt(carbon.NewCarbon(dateRange.To)) {
-		newTime := cTime
 		switch pace := expTpl.RepeatabilityIntervalPace; pace {
 		case "D":
-			newTime = cTime.AddDays(expTpl.RepeatabilityIntervalUnit)
+			cTime = cTime.AddDays(expTpl.RepeatabilityIntervalUnit)
 		case "W":
-			newTime = cTime.AddWeeks(expTpl.RepeatabilityIntervalUnit)
+			cTime = cTime.AddWeeks(expTpl.RepeatabilityIntervalUnit)
 		case "M":
-			newTime = cTime.AddMonths(expTpl.RepeatabilityIntervalUnit)
+			cTime = cTime.AddMonths(expTpl.RepeatabilityIntervalUnit)
 		case "Y":
-			newTime = cTime.AddYears(expTpl.RepeatabilityIntervalUnit)
+			cTime = cTime.AddYears(expTpl.RepeatabilityIntervalUnit)
 		default:
 			return []*model.Expense{}, errors.New(fmt.Sprintf("Time interval pace '%s' not supported", pace))
 		}
-		cTime = newTime
 		expenses = append(expenses, model.NewExpense(expTpl.Amount, cTime.StdTime()))
 	}
 
