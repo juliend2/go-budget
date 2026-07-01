@@ -14,14 +14,14 @@ func TestExpenseTemplateRepetitionCreatesFirstTwoOccurrences(t *testing.T) {
 		100,
 		"abonnement",
 		model.WithInitialToBePaidOn(2026, time.June, 1),
-		model.WithRepeatabilityInterval(1, "m"),
+		model.WithRepeatabilityInterval(1, "M"),
 	)
 
 	// Act
 	expenses, _ := repository.GenerateRepeatingExpenses(
 		expTpl,
 		model.DateRange{
-			From: model.Date(2026, time.June, 1),
+			From: model.Date(2026, time.June, 2),
 			To:   model.Date(2026, time.July, 29),
 		},
 	)

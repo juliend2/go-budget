@@ -3,32 +3,30 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"desrosiers.org/budget/model"
 	"github.com/dromara/carbon/v2"
 )
 
-func GenerateRepeatingExpenses(expTpl *model.ExpenseTemplate, dtRange model.DateRange) ([]*model.Expense, error) {
-	if dtRange.To.Before(expTpl.InitialToBePaidOn) {
-		return []*model.Expense{}, nil // out-or-range
-	}
-
+func GenerateRepeatingExpenses(expTpl *model.ExpenseTemplate, dateRange model.DateRange) ([]*model.Expense, error) {
+	expenses := []*model.Expense{}
 	cTime := carbon.NewCarbon(expTpl.InitialToBePaidOn)
-	// TODO: create a var that will contain the expenses and that we will push
-	// expenses into
 
-	for cTime.Lt(carbon.NewCarbon(expTpl.InitialToBePaidOn)) {
+	for cTime.Lt(carbon.NewCarbon(dateRange.To)) {
 		switch pace := expTpl.RepeatabilityIntervalPace; pace {
-		case "m":
+		case "D":
+			cTime = cTime.AddDays(expTpl.RepeatabilityIntervalUnit)
+		case "W":
+			cTime = cTime.AddWeeks(expTpl.RepeatabilityIntervalUnit)
+		case "M":
 			cTime = cTime.AddMonths(expTpl.RepeatabilityIntervalUnit)
+		case "Y":
+			cTime = cTime.AddYears(expTpl.RepeatabilityIntervalUnit)
 		default:
 			return []*model.Expense{}, errors.New(fmt.Sprintf("Time interval pace '%s' not supported", pace))
 		}
-
+		expenses = append(expenses, model.NewExpense(expTpl.Amount, cTime.StdTime()))
 	}
 
-	return []*model.Expense{
-		model.NewExpense(100, model.Date(2026, time.June, 11)),
-	}, nil
+	return expenses, nil
 }
