@@ -60,9 +60,11 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	}
 
 	expenses := []*model.Expense{
+		// first pay:
 		model.NewExpense(1, model.Date(2026, time.June, 30)),
 		model.NewExpense(2, model.Date(2026, time.June, 30)),
 		model.NewExpense(1, model.Date(2026, time.July, 1)),
+		// second pay:
 		model.NewExpense(1, model.Date(2026, time.July, 15)),
 		model.NewExpense(1, model.Date(2026, time.July, 16)),
 		model.NewExpense(1, model.Date(2026, time.July, 30)),
@@ -72,18 +74,27 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	pe := model.PutExpensesInTheirPayPeriods(payDays, expenses)
 
 	// Assert
-	_, ok := pe["2026-06-30"]
+	list, ok := pe["2026-06-30"]
 	if !ok {
 		t.Errorf("Expected 2026-06-30 to exist")
 	}
+	if len(list) != 3 {
+		t.Errorf("len(pe['2026-06-30']) = %d; want 3", len(list))
+	}
 
-	_, ok2 := pe["2026-07-15"]
+	list2, ok2 := pe["2026-07-15"]
 	if !ok2 {
 		t.Errorf("Expected 2026-07-15 to exist")
 	}
+	if len(list2) != 3 {
+		t.Errorf("len(pe['2026-07-15']) = %d; want 3", len(list2))
+	}
 
-	_, ok3 := pe["2026-07-31"]
+	list3, ok3 := pe["2026-07-31"]
 	if ok3 {
 		t.Errorf("Expected 2026-07-31 NOT to exist")
+	}
+	if len(list3) != 0 {
+		t.Errorf("len(pe['2026-07-31']) = %d; want 0", len(list3))
 	}
 }
