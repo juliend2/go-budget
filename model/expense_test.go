@@ -98,3 +98,35 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 		t.Errorf("len(pe['2026-07-31']) = %d; want 0", len(list3))
 	}
 }
+
+func TestIntegrationBetweenGetPayDaysAndPutExpensesInTheirPayPeriods(t *testing.T) {
+	// Arrange
+	dateRange := model.DateRange{
+		From: model.Date(2026, time.June, 1),
+		To:   model.Date(2026, time.July, 31),
+	}
+	payDays := model.GetPayDays(dateRange)
+
+	expenses := []*model.Expense{
+		// first pay:
+		model.NewExpense(1, model.Date(2026, time.June, 30)),
+		model.NewExpense(2, model.Date(2026, time.June, 30)),
+		model.NewExpense(1, model.Date(2026, time.July, 1)),
+		// second pay:
+		model.NewExpense(1, model.Date(2026, time.July, 15)),
+		model.NewExpense(1, model.Date(2026, time.July, 16)),
+		model.NewExpense(1, model.Date(2026, time.July, 30)),
+	}
+
+	// Act
+	pe := model.PutExpensesInTheirPayPeriods(payDays, expenses)
+
+	// Assert
+	_, ok := pe["2026-06-30"]
+	if !ok {
+		t.Errorf("2026-06-30 pay should exist")
+	}
+
+	// TODO: add more tests
+
+}
