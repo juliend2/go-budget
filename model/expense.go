@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/dromara/carbon/v2"
 )
 
 type DateRange struct {
@@ -39,4 +41,32 @@ func WithNow(now time.Time) ExpenseOption {
 
 func (e *Expense) IsDue() bool {
 	return !e.now.Before(e.ToBePaidAt)
+}
+
+func GetPayDays(dateRange DateRange) []time.Time {
+	dates := []time.Time{}
+	firstValue := carbon.NewCarbon(dateRange.From)
+	d := dateRange.From.Day()
+	if d > 15 {
+		firstValue = firstValue.EndOfMonth()
+	} else if d < 15 {
+		firstValue = firstValue.SetDay(15)
+	}
+	// is 15; do nothing
+
+	dates = append(dates, firstValue.StdTime())
+
+	for carbon.NewCarbon(dates[len(dates)-1]).Lt(carbon.NewCarbon(dateRange.To)) {
+		value := carbon.NewCarbon(dates[len(dates)-1])
+		if value.Day() == 15 {
+			value = value.EndOfMonth()
+		} else {
+			// Assume it can only be 15th or last-of-month
+			// so go to 1st of next month and set the day to 15th
+			value = value.AddDays(1).SetDay(15)
+		}
+		dates = append(dates, value.StdTime())
+	}
+
+	return dates
 }
