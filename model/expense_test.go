@@ -50,3 +50,40 @@ func TestGetPayDays(t *testing.T) {
 		t.Errorf("payDays[2] = %s; want 2026-01-15", got)
 	}
 }
+
+func TestPutExpensesInTheirPayPeriods(t *testing.T) {
+	// Arrange
+	payDays := []time.Time{
+		model.Date(2026, time.June, 30),
+		model.Date(2026, time.July, 15),
+		model.Date(2026, time.July, 31),
+	}
+
+	expenses := []*model.Expense{
+		model.NewExpense(1, model.Date(2026, time.June, 30)),
+		model.NewExpense(2, model.Date(2026, time.June, 30)),
+		model.NewExpense(1, model.Date(2026, time.July, 1)),
+		model.NewExpense(1, model.Date(2026, time.July, 15)),
+		model.NewExpense(1, model.Date(2026, time.July, 16)),
+		model.NewExpense(1, model.Date(2026, time.July, 30)),
+	}
+
+	// Act
+	pe := model.PutExpensesInTheirPayPeriods(payDays, expenses)
+
+	// Assert
+	_, ok := pe["2026-06-30"]
+	if !ok {
+		t.Errorf("Expected 2026-06-30 to exist")
+	}
+
+	_, ok2 := pe["2026-07-15"]
+	if !ok2 {
+		t.Errorf("Expected 2026-07-15 to exist")
+	}
+
+	_, ok3 := pe["2026-07-31"]
+	if ok3 {
+		t.Errorf("Expected 2026-07-31 NOT to exist")
+	}
+}

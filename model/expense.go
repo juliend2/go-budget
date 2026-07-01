@@ -70,3 +70,29 @@ func GetPayDays(dateRange DateRange) []time.Time {
 
 	return dates
 }
+
+func PutExpensesInTheirPayPeriods(pays []time.Time, exps []*Expense) map[string][]*Expense {
+	acc := make(map[string][]*Expense)
+
+	for i := range pays {
+		from := carbon.NewCarbon(pays[i])
+		to := carbon.ZeroValue()
+		if i != len(pays)-1 {
+			to = carbon.NewCarbon(pays[i+1])
+		}
+
+		for _, exp := range exps {
+			toBePaidAt := carbon.NewCarbon(exp.ToBePaidAt)
+			if toBePaidAt.Gte(from) && (to.IsZero() || toBePaidAt.Lt(to)) {
+				_, ok := acc[from.ToDateString()]
+				if ok {
+					acc[from.ToDateString()] = append(acc[from.ToDateString()], exp)
+				} else {
+					acc[from.ToDateString()] = []*Expense{exp}
+				}
+			}
+		}
+	}
+
+	return acc
+}
