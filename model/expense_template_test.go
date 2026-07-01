@@ -20,7 +20,7 @@ func TestExpenseTemplateRepetitionCreatesExpenseForTemplateStartingBeforeFrom(t 
 	expenses, _ := expTpl.GenerateRepeatingExpenses(
 		model.DateRange{
 			From: model.Date(2026, time.June, 1),
-			To:   model.Date(2026, time.June, 2), // excludes the `To`
+			To:   model.Date(2026, time.June, 2), // inclusive
 		},
 	)
 

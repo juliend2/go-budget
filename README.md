@@ -5,6 +5,7 @@ README
 dateRange := INPUT[0]
 exp_templates := repo.GetExpenseTemplates() // O(N)
 templated_expense_ids := []
+
 for each exp_template from exp_templates:
     repeating_expenses_in_range := model.GenerateRepeatingExpenses(exp_template, dateRange) // 
     for each repeating_exp from repeating_expenses_in_range:

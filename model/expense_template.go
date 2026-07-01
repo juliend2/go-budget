@@ -55,7 +55,7 @@ func (tpl *ExpenseTemplate) GenerateRepeatingExpenses(dateRange DateRange) ([]*E
 	// when the InitialToBePaidOn happened before the dateRange.From.
 	// And we're not concerned about filtering out paid expenses just yet, so if
 	// there are past unpaid expenses, we do want them in those results.
-	for cTime.Lt(carbon.NewCarbon(dateRange.To)) {
+	for cTime.Lte(carbon.NewCarbon(dateRange.To)) {
 		switch pace := tpl.RepeatabilityIntervalPace; pace {
 		case "D":
 			cTime = cTime.AddDays(tpl.RepeatabilityIntervalUnit)
