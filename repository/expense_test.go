@@ -27,7 +27,7 @@ func TestFillCandidates(t *testing.T) {
 	existRecords := []*model.Expense{}
 
 	// Act
-	expenses := repository.FillCandidates(dtRange, expenseTemplates, existRecords)
+	expenses := repository.FillCandidates(expenseTemplates, dtRange, existRecords)
 
 	// Assert
 	if len(expenses) == 0 {

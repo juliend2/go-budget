@@ -8,7 +8,7 @@ import (
 
 // type Expense struct{}
 
-func FillCandidates(dtRange model.DateRange, expTpls []*model.ExpenseTemplate, existingExp []*model.Expense) []*model.Expense {
+func FillCandidates(expTpls []*model.ExpenseTemplate, dtRange model.DateRange, existingExp []*model.Expense) []*model.Expense {
 	// TODO
 
 	return []*model.Expense{
