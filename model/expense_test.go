@@ -71,31 +71,31 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	}
 
 	// Act
-	pe := model.PutExpensesInTheirPayPeriods(payDays, expenses)
+	paydayExpenses := model.PutExpensesInTheirPayPeriods(payDays, expenses)
 
 	// Assert
-	list, ok := pe["2026-06-30"]
+	list, ok := paydayExpenses["2026-06-30"]
 	if !ok {
 		t.Errorf("Expected 2026-06-30 to exist")
 	}
 	if len(list) != 3 {
-		t.Errorf("len(pe['2026-06-30']) = %d; want 3", len(list))
+		t.Errorf("len(paydayExpenses['2026-06-30']) = %d; want 3", len(list))
 	}
 
-	list2, ok2 := pe["2026-07-15"]
+	list2, ok2 := paydayExpenses["2026-07-15"]
 	if !ok2 {
 		t.Errorf("Expected 2026-07-15 to exist")
 	}
 	if len(list2) != 3 {
-		t.Errorf("len(pe['2026-07-15']) = %d; want 3", len(list2))
+		t.Errorf("len(paydayExpenses['2026-07-15']) = %d; want 3", len(list2))
 	}
 
-	list3, ok3 := pe["2026-07-31"]
+	list3, ok3 := paydayExpenses["2026-07-31"]
 	if ok3 {
 		t.Errorf("Expected 2026-07-31 NOT to exist")
 	}
 	if len(list3) != 0 {
-		t.Errorf("len(pe['2026-07-31']) = %d; want 0", len(list3))
+		t.Errorf("len(paydayExpenses['2026-07-31']) = %d; want 0", len(list3))
 	}
 }
 
@@ -119,10 +119,10 @@ func TestIntegrationBetweenGetPayDaysAndPutExpensesInTheirPayPeriods(t *testing.
 	}
 
 	// Act
-	pe := model.PutExpensesInTheirPayPeriods(payDays, expenses)
+	paydayExpenses := model.PutExpensesInTheirPayPeriods(payDays, expenses)
 
 	// Assert
-	_, ok := pe["2026-06-30"]
+	_, ok := paydayExpenses["2026-06-30"]
 	if !ok {
 		t.Errorf("2026-06-30 pay should exist")
 	}
