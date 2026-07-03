@@ -48,27 +48,27 @@ func WithRepeatabilityInterval(unit int, pace string) ExpenseTemplateOption {
 
 func (tpl *ExpenseTemplate) GenerateRepeatingExpenses(dateRange DateRange) ([]*Expense, error) {
 	expenses := []*Expense{}
-	cTime := carbon.NewCarbon(tpl.InitialToBePaidOn)
+	time := carbon.NewCarbon(tpl.InitialToBePaidOn)
 
-	// Here, we don't want to also do cTime.Gte(carbon.NewCarbon(dateRange.From))
+	// Here, we don't want to also do time.Gte(carbon.NewCarbon(dateRange.From))
 	// because if we do, we never start the loop since the condition is never met
 	// when the InitialToBePaidOn happened before the dateRange.From.
 	// And we're not concerned about filtering out paid expenses just yet, so if
 	// there are past unpaid expenses, we do want them in those results.
-	for cTime.Lte(carbon.NewCarbon(dateRange.To)) {
+	for time.Lte(carbon.NewCarbon(dateRange.To)) {
 		switch pace := tpl.RepeatabilityIntervalPace; pace {
 		case "D":
-			cTime = cTime.AddDays(tpl.RepeatabilityIntervalUnit)
+			time = time.AddDays(tpl.RepeatabilityIntervalUnit)
 		case "W":
-			cTime = cTime.AddWeeks(tpl.RepeatabilityIntervalUnit)
+			time = time.AddWeeks(tpl.RepeatabilityIntervalUnit)
 		case "M":
-			cTime = cTime.AddMonths(tpl.RepeatabilityIntervalUnit)
+			time = time.AddMonths(tpl.RepeatabilityIntervalUnit)
 		case "Y":
-			cTime = cTime.AddYears(tpl.RepeatabilityIntervalUnit)
+			time = time.AddYears(tpl.RepeatabilityIntervalUnit)
 		default:
 			return []*Expense{}, errors.New(fmt.Sprintf("Time interval pace '%s' not supported", pace))
 		}
-		expenses = append(expenses, NewExpense(tpl.Amount, cTime.StdTime()))
+		expenses = append(expenses, NewExpense(tpl.Amount, time.StdTime()))
 	}
 
 	return expenses, nil
