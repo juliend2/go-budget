@@ -29,7 +29,6 @@ func NewExpenseTemplate(amnt int, desc string, opt ...ExpenseTemplateOption) *Ex
 	for _, o := range opt {
 		o(expenseTemplate)
 	}
-
 	return expenseTemplate
 }
 
@@ -46,29 +45,37 @@ func WithRepeatabilityInterval(unit int, pace string) ExpenseTemplateOption {
 	}
 }
 
+func (tpl *ExpenseTemplate) getNextToBePaidAt(t *carbon.Carbon) (*carbon.Carbon, error) {
+	switch pace := tpl.RepeatabilityIntervalPace; pace {
+	case "D":
+		return t.AddDays(tpl.RepeatabilityIntervalUnit), nil
+	case "W":
+		return t.AddWeeks(tpl.RepeatabilityIntervalUnit), nil
+	case "M":
+		return t.AddMonths(tpl.RepeatabilityIntervalUnit), nil
+	case "Y":
+		return t.AddYears(tpl.RepeatabilityIntervalUnit), nil
+	default:
+		return carbon.ZeroValue(), errors.New(fmt.Sprintf("Time interval pace '%s' not supported", pace))
+	}
+}
+
 func (tpl *ExpenseTemplate) GenerateRepeatingExpenses(dateRange DateRange) ([]*Expense, error) {
 	expenses := []*Expense{}
-	time := carbon.NewCarbon(tpl.InitialToBePaidOn)
+	t := carbon.NewCarbon(tpl.InitialToBePaidOn)
+	next, _ := tpl.getNextToBePaidAt(t)
 
-	// Here, we don't want to also do time.Gte(carbon.NewCarbon(dateRange.From))
+	expenses = append(expenses, NewExpense(tpl.Amount, t.StdTime())) // first is InitialToBePaidOn
+
+	// Here, we don't want to also do next.Gte(carbon.NewCarbon(dateRange.From))
 	// because if we do, we never start the loop since the condition is never met
 	// when the InitialToBePaidOn happened before the dateRange.From.
 	// And we're not concerned about filtering out paid expenses just yet, so if
 	// there are past unpaid expenses, we do want them in those results.
-	for time.Lte(carbon.NewCarbon(dateRange.To)) {
-		switch pace := tpl.RepeatabilityIntervalPace; pace {
-		case "D":
-			time = time.AddDays(tpl.RepeatabilityIntervalUnit)
-		case "W":
-			time = time.AddWeeks(tpl.RepeatabilityIntervalUnit)
-		case "M":
-			time = time.AddMonths(tpl.RepeatabilityIntervalUnit)
-		case "Y":
-			time = time.AddYears(tpl.RepeatabilityIntervalUnit)
-		default:
-			return []*Expense{}, errors.New(fmt.Sprintf("Time interval pace '%s' not supported", pace))
-		}
-		expenses = append(expenses, NewExpense(tpl.Amount, time.StdTime()))
+	for next.Lte(carbon.NewCarbon(dateRange.To)) {
+		t, _ = tpl.getNextToBePaidAt(t)
+		next, _ = tpl.getNextToBePaidAt(t)
+		expenses = append(expenses, NewExpense(tpl.Amount, t.StdTime()))
 	}
 
 	return expenses, nil

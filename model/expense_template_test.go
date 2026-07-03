@@ -95,20 +95,14 @@ func TestIntegrationRepeatingExpensesAreProperlyFilledIntoPayDayGroupings(t *tes
 	// Act
 	paydayExpenses := model.PutExpensesInTheirPayPeriods(payDays, expenses)
 
-	// for key, val := range paydayExpenses {
-	// 	fmt.Println(key)
-	// 	for _, exp := range val {
-	// 		fmt.Println(exp)
-	// 	}
-	// }
 	// Assert
 	_, ok := paydayExpenses["2026-05-31"]
 	if !ok {
 		t.Errorf("2026-05-31 pay should exist") // ... even if the only expense is a tpl that starts after the PayDay
 	}
 
-	firstMonthExpenses, _ := paydayExpenses["2026-05-01"]
+	firstMonthExpenses, _ := paydayExpenses["2026-05-31"]
 	if len(firstMonthExpenses) < 1 {
-		t.Errorf("2026-05-01 pay should contain the first repeating expense")
+		t.Errorf("2026-05-31 pay should contain the first repeating expense")
 	}
 }
