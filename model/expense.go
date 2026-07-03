@@ -52,7 +52,7 @@ func GetPayDays(dateRange DateRange) []time.Time {
 	} else if d < 15 {
 		firstValue = firstValue.SetDay(15)
 	}
-	// is 15; do nothing
+	// d is 15; do nothing
 
 	dates = append(dates, firstValue.StdTime())
 
