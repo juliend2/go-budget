@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi Budgétaire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1><i class="fa-solid fa-wallet"></i> Suivi Budgétaire</h1>
+                <div class="subtitle">Gestion des dépenses et payes récurrentes</div>
+            </div>
+            <div class="subtitle">
+                Date courante : <strong>2026-07-11</strong>
+            </div>
+        </header>
+
+        <!-- Forms Panel -->
+        <div class="panel">
+            <div class="forms-container">
+                <!-- One-time Expense Form -->
+                <div>
+                    <div class="form-title">
+                        <i class="fa-solid fa-circle-dollar-to-slot"></i> Dépense unique
+                    </div>
+                    <form action="/expense/add" method="POST">
+                        <div class="form-group">
+                            <label for="desc-unique">Description</label>
+                            <input type="text" id="desc-unique" name="description" placeholder="Ex: Épicerie, Restaurant" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount-unique">Montant ($)</label>
+                            <input type="number" id="amount-unique" name="amount" placeholder="0" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="date-unique">Date d'échéance</label>
+                            <input type="date" id="date-unique" name="to_be_paid_at" value="2026-07-11" required>
+                        </div>
+                        <button type="submit" class="btn">Ajouter la dépense</button>
+                    </form>
+                </div>
+
+                <!-- Recurring Template Form -->
+                <div>
+                    <div class="form-title">
+                        <i class="fa-solid fa-arrows-spin"></i> Dépense récurrente
+                    </div>
+                    <form action="/template/add" method="POST">
+                        <div class="form-group">
+                            <label for="desc-rec">Description</label>
+                            <input type="text" id="desc-rec" name="description" placeholder="Ex: Loyer, Netflix" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount-rec">Montant ($)</label>
+                            <input type="number" id="amount-rec" name="amount" placeholder="0" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="date-rec">Première échéance</label>
+                            <input type="date" id="date-rec" name="initial_to_be_paid_on" value="2026-07-11" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div class="form-group">
+                                <label for="unit-rec">Intervalle</label>
+                                <input type="number" id="unit-rec" name="interval_unit" value="1" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="pace-rec">Fréquence</label>
+                                <select id="pace-rec" name="interval_pace">
+                                    <option value="W">Semaine(s)</option>
+                                    <option value="M" selected>Mois</option>
+                                    <option value="Y">Année(s)</option>
+                                    <option value="D">Jour(s)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" style="background: linear-gradient(135deg, #818cf8, #4f46e5);">Créer le modèle récurrent</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pay periods lists -->
+        <h2><i class="fa-solid fa-list-check" style="color: #38bdf8; margin-right: 0.5rem;"></i> Calendrier des payes et dépenses</h2>
+        <div style="margin-top: 1.5rem;">
+            {{range $index, $period := .Periods}}
+            <div class="period-card">
+                <div class="period-header">
+                    <h3>
+                        Sommaire au payeur du {{.PayDayStr}}
+                        {{if eq $index 0}}
+                        <span class="overdue-badge"><i class="fa-solid fa-triangle-exclamation"></i> Inclut retards</span>
+                        {{end}}
+                    </h3>
+                    <span class="period-dates">Du {{.PeriodStartStr}} au {{.PayDayStr}}</span>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Date d'échéance</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{if not .Expenses}}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
+                                    Aucune dépense planifiée pour cette période.
+                                </td>
+                            </tr>
+                            {{else}}
+                                {{range .Expenses}}
+                                <tr class="{{if .IsPaid}}row-paid{{else}}row-unpaid{{end}}">
+                                    <td>{{.Description}}</td>
+                                    <td>{{.ToBePaidAt.Format "2006-01-02"}}</td>
+                                    <td class="amount">{{.Amount}} $</td>
+                                    <td>
+                                        {{if .IsPaid}}
+                                        <span class="status-pill status-paid">Payé</span>
+                                        {{else}}
+                                        <span class="status-pill status-unpaid">À payer</span>
+                                        {{end}}
+                                    </td>
+                                    <td>
+                                        {{if not .IsPaid}}
+                                        <a href="/expense/pay?id={{.ID.Hex}}" class="btn-pay" style="text-decoration: none; display: inline-block;">Payer</a>
+                                        {{else}}
+                                        <span class="text-completed"><i class="fas fa-check-circle"></i></span>
+                                        {{end}}
+                                    </td>
+                                </tr>
+                                {{end}}
+                            {{end}}
+                            <tr class="summary-row">
+                                <td colspan="2"><strong>En date du {{.PayDayStr}}</strong></td>
+                                <td class="amount"><strong>{{.TotalAmount}} $</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,298 @@
+:root {
+  --bg-gradient-start: #0f172a;
+  --bg-gradient-end: #020617;
+  --glass-bg: rgba(30, 41, 59, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --accent-cyan: #06b6d4;
+  --accent-cyan-glow: rgba(6, 182, 212, 0.35);
+  --accent-amber: #f59e0b;
+  --accent-amber-glow: rgba(245, 158, 11, 0.25);
+  
+  --status-paid-bg: rgba(16, 185, 129, 0.15);
+  --status-paid-border: rgba(16, 185, 129, 0.3);
+  --status-paid-text: #34d399;
+  
+  --status-unpaid-bg: rgba(244, 63, 94, 0.12);
+  --status-unpaid-border: rgba(244, 63, 94, 0.35);
+  --status-unpaid-text: #fb7185;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  padding: 2.5rem 1rem;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+header {
+  margin-bottom: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 1.5rem;
+}
+
+h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Glassmorphism Panel */
+.panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  margin-bottom: 2rem;
+}
+
+/* Tabs & Forms styling */
+.forms-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .forms-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px var(--accent-cyan-glow);
+}
+
+.btn {
+  background: linear-gradient(135deg, #0891b2, #0284c7);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px var(--accent-cyan-glow);
+  filter: brightness(1.15);
+}
+
+/* Pay period styling */
+.period-card {
+  border: 1px solid var(--glass-border);
+  background: rgba(30, 41, 59, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.period-header {
+  padding: 1.25rem 1.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.period-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.period-dates {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th {
+  padding: 1rem 1.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--glass-border);
+  font-weight: 700;
+}
+
+td {
+  padding: 1rem 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.amount {
+  font-weight: 600;
+}
+
+/* Status pills */
+.status-pill {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+}
+
+.status-paid {
+  background-color: var(--status-paid-bg);
+  border-color: var(--status-paid-border);
+  color: var(--status-paid-text);
+}
+
+.status-unpaid {
+  background-color: var(--status-unpaid-bg);
+  border-color: var(--status-unpaid-border);
+  color: var(--status-unpaid-text);
+}
+
+/* Action button */
+.btn-pay {
+  background: var(--status-unpaid-bg);
+  border: 1px solid var(--status-unpaid-border);
+  color: var(--status-unpaid-text);
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pay:hover {
+  background-color: var(--status-unpaid-text);
+  color: #020617;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+}
+
+.text-completed {
+  color: var(--status-paid-text);
+  font-size: 1.1rem;
+}
+
+/* Summary Row styling */
+.summary-row {
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.summary-row td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: none;
+  font-size: 1.05rem;
+}
+
+.summary-row td strong {
+  color: var(--accent-amber);
+  text-shadow: 0 0 12px var(--accent-amber-glow);
+}
+
+.summary-row td.amount strong {
+  font-size: 1.15rem;
+}
+
+.overdue-badge {
+  background-color: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  color: #fb7185;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
