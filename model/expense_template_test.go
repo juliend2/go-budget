@@ -29,6 +29,14 @@ func TestExpenseTemplateRepetitionCreatesExpenseForTemplateStartingBeforeFrom(t 
 	if len(expenses) != 2 {
 		t.Errorf("len(GenerateRepeatingExpenses()) = %d; want 2", len(expenses))
 	}
+
+	// Verify metadata copy
+	if expenses[0].Description != "abonnement" {
+		t.Errorf("expenses[0].Description = %s; want abonnement", expenses[0].Description)
+	}
+	if expenses[0].TemplateID == nil || *expenses[0].TemplateID != expTpl.ID {
+		t.Errorf("expenses[0].TemplateID = %v; want %v", expenses[0].TemplateID, expTpl.ID)
+	}
 }
 
 func TestExpenseTemplateRepetitionCreatesFirstTwoOccurrences(t *testing.T) {
@@ -104,5 +112,51 @@ func TestIntegrationRepeatingExpensesAreProperlyFilledIntoPayDayGroupings(t *tes
 	firstMonthExpenses, _ := paydayExpenses["2026-05-31"]
 	if len(firstMonthExpenses) < 1 {
 		t.Errorf("2026-05-31 pay should contain the first repeating expense")
+	}
+}
+
+func TestInvalidPaceReturnsError(t *testing.T) {
+	// Arrange
+	expTpl := model.NewExpenseTemplate(
+		100,
+		"abonnement",
+		model.WithInitialToBePaidOn(2026, time.June, 1),
+		model.WithRepeatabilityInterval(1, "INVALID"),
+	)
+
+	// Act
+	_, err := expTpl.GenerateRepeatingExpenses(
+		model.DateRange{
+			From: model.Date(2026, time.June, 1),
+			To:   model.Date(2026, time.July, 1),
+		},
+	)
+
+	// Assert
+	if err == nil {
+		t.Errorf("Expected error for invalid repeatability interval pace, got nil")
+	}
+}
+
+func TestInvalidUnitReturnsError(t *testing.T) {
+	// Arrange
+	expTpl := model.NewExpenseTemplate(
+		100,
+		"abonnement",
+		model.WithInitialToBePaidOn(2026, time.June, 1),
+		model.WithRepeatabilityInterval(0, "M"),
+	)
+
+	// Act
+	_, err := expTpl.GenerateRepeatingExpenses(
+		model.DateRange{
+			From: model.Date(2026, time.June, 1),
+			To:   model.Date(2026, time.July, 1),
+		},
+	)
+
+	// Assert
+	if err == nil {
+		t.Errorf("Expected error for interval unit <= 0, got nil")
 	}
 }

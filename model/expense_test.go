@@ -6,6 +6,7 @@ import (
 
 	"desrosiers.org/budget/model"
 	"github.com/dromara/carbon/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestIsDue(t *testing.T) {
@@ -17,6 +18,29 @@ func TestIsDue(t *testing.T) {
 	got := exp.IsDue()
 	if got == true {
 		t.Errorf("IsDue() = %v; want false", got)
+	}
+}
+
+func TestIsPaid(t *testing.T) {
+	// Unpaid
+	exp := model.NewExpense(100, time.Now())
+	if exp.IsPaid() {
+		t.Errorf("Expected new expense to be unpaid")
+	}
+
+	// Partially paid
+	exp.Payments = []model.Payment{
+		{Amount: 40},
+		{Amount: 30},
+	}
+	if exp.IsPaid() {
+		t.Errorf("Expected expense with total payments 70 < 100 to be unpaid")
+	}
+
+	// Fully paid
+	exp.Payments = append(exp.Payments, model.Payment{Amount: 30})
+	if !exp.IsPaid() {
+		t.Errorf("Expected expense with total payments 100 >= 100 to be paid")
 	}
 }
 
@@ -60,14 +84,12 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	}
 
 	expenses := []*model.Expense{
-		// first pay:
-		model.NewExpense(1, model.Date(2026, time.June, 30)),
-		model.NewExpense(2, model.Date(2026, time.June, 30)),
-		model.NewExpense(1, model.Date(2026, time.July, 1)),
-		// second pay:
-		model.NewExpense(1, model.Date(2026, time.July, 15)),
-		model.NewExpense(1, model.Date(2026, time.July, 16)),
-		model.NewExpense(1, model.Date(2026, time.July, 30)),
+		// first pay period: (2026-06-30, 2026-07-15]
+		model.NewExpense(10, model.Date(2026, time.July, 1)),
+		model.NewExpense(20, model.Date(2026, time.July, 15)),
+		// second pay period: (2026-07-15, 2026-07-31]
+		model.NewExpense(30, model.Date(2026, time.July, 16)),
+		model.NewExpense(40, model.Date(2026, time.July, 31)),
 	}
 
 	// Act
@@ -78,55 +100,47 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	if !ok {
 		t.Errorf("Expected 2026-06-30 to exist")
 	}
-	if len(list) != 3 {
-		t.Errorf("len(paydayExpenses['2026-06-30']) = %d; want 3", len(list))
+	if len(list) != 2 {
+		t.Errorf("len(paydayExpenses['2026-06-30']) = %d; want 2", len(list))
 	}
 
 	list2, ok2 := paydayExpenses["2026-07-15"]
 	if !ok2 {
 		t.Errorf("Expected 2026-07-15 to exist")
 	}
-	if len(list2) != 3 {
-		t.Errorf("len(paydayExpenses['2026-07-15']) = %d; want 3", len(list2))
-	}
-
-	list3, ok3 := paydayExpenses["2026-07-31"]
-	if ok3 {
-		t.Errorf("Expected 2026-07-31 NOT to exist")
-	}
-	if len(list3) != 0 {
-		t.Errorf("len(paydayExpenses['2026-07-31']) = %d; want 0", len(list3))
+	if len(list2) != 2 {
+		t.Errorf("len(paydayExpenses['2026-07-15']) = %d; want 2", len(list2))
 	}
 }
 
-func TestIntegrationBetweenGetPayDaysAndPutExpensesInTheirPayPeriods(t *testing.T) {
+func TestPutExpensesInTheirPayPeriods_OverdueUnpaidCarriedForward(t *testing.T) {
 	// Arrange
-	dateRange := model.DateRange{
-		From: model.Date(2026, time.June, 1),
-		To:   model.Date(2026, time.July, 31),
+	payDays := []time.Time{
+		model.Date(2026, time.June, 30),
+		model.Date(2026, time.July, 15),
 	}
-	payDays := model.GetPayDays(dateRange)
+
+	expID1 := primitive.NewObjectID()
+	expID2 := primitive.NewObjectID()
 
 	expenses := []*model.Expense{
-		// first pay:
-		model.NewExpense(1, model.Date(2026, time.June, 30)),
-		model.NewExpense(2, model.Date(2026, time.June, 30)),
-		model.NewExpense(1, model.Date(2026, time.July, 1)),
-		// second pay:
-		model.NewExpense(1, model.Date(2026, time.July, 15)),
-		model.NewExpense(1, model.Date(2026, time.July, 16)),
-		model.NewExpense(1, model.Date(2026, time.July, 30)),
+		// Unpaid past expense (due 2026-06-15) -> Should be carried forward
+		model.NewExpense(100, model.Date(2026, time.June, 15), model.WithID(expID1)),
+		// Paid past expense (due 2026-06-10) -> Should NOT be carried forward
+		model.NewExpense(50, model.Date(2026, time.June, 10), model.WithID(expID2), model.WithPayments([]model.Payment{
+			{ExpenseID: expID2, Amount: 50, PaidAt: time.Now()},
+		})),
 	}
 
 	// Act
 	paydayExpenses := model.PutExpensesInTheirPayPeriods(payDays, expenses)
 
 	// Assert
-	_, ok := paydayExpenses["2026-06-30"]
-	if !ok {
-		t.Errorf("2026-06-30 pay should exist")
+	list := paydayExpenses["2026-06-30"]
+	if len(list) != 1 {
+		t.Fatalf("Expected exactly 1 overdue expense in first pay slot, got %d", len(list))
 	}
-
-	// TODO: add more tests
-
+	if list[0].ID != expID1 {
+		t.Errorf("Expected carried forward expense to be %v, got %v", expID1, list[0].ID)
+	}
 }

@@ -6,16 +6,17 @@ import (
 	"time"
 
 	"github.com/dromara/carbon/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ExpenseTemplate struct {
-	Id                        int
-	Amount                    int
-	Description               string
-	InitialToBePaidOn         time.Time
-	RepeatabilityIntervalUnit int
-	RepeatabilityIntervalPace string
-	IsOnHold                  bool
+	ID                        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Amount                    int                `bson:"amount" json:"amount"`
+	Description               string             `bson:"description" json:"description"`
+	InitialToBePaidOn         time.Time          `bson:"initial_to_be_paid_on" json:"initial_to_be_paid_on"`
+	RepeatabilityIntervalUnit int                `bson:"repeatability_interval_unit" json:"repeatability_interval_unit"`
+	RepeatabilityIntervalPace string             `bson:"repeatability_interval_pace" json:"repeatability_interval_pace"`
+	IsOnHold                  bool               `bson:"is_on_hold" json:"is_on_hold"`
 }
 
 type ExpenseTemplateOption func(*ExpenseTemplate)
@@ -30,6 +31,12 @@ func NewExpenseTemplate(amnt int, desc string, opt ...ExpenseTemplateOption) *Ex
 		o(expenseTemplate)
 	}
 	return expenseTemplate
+}
+
+func WithTemplateIDVal(id primitive.ObjectID) ExpenseTemplateOption {
+	return func(e *ExpenseTemplate) {
+		e.ID = id
+	}
 }
 
 func WithInitialToBePaidOn(y int, m time.Month, d int) ExpenseTemplateOption {
@@ -61,21 +68,44 @@ func (tpl *ExpenseTemplate) getNextToBePaidAt(t *carbon.Carbon) (*carbon.Carbon,
 }
 
 func (tpl *ExpenseTemplate) GenerateRepeatingExpenses(dateRange DateRange) ([]*Expense, error) {
+	if tpl.RepeatabilityIntervalUnit <= 0 {
+		return nil, fmt.Errorf("repeatability interval unit must be greater than 0, got %d", tpl.RepeatabilityIntervalUnit)
+	}
+
 	expenses := []*Expense{}
 	t := carbon.NewCarbon(tpl.InitialToBePaidOn)
-	next, _ := tpl.getNextToBePaidAt(t)
+	next, err := tpl.getNextToBePaidAt(t)
+	if err != nil {
+		return nil, err
+	}
 
-	expenses = append(expenses, NewExpense(tpl.Amount, t.StdTime())) // first is InitialToBePaidOn
+	// first is InitialToBePaidOn
+	expenses = append(expenses, NewExpense(
+		tpl.Amount,
+		t.StdTime(),
+		WithDescription(tpl.Description),
+		WithTemplateID(tpl.ID),
+	))
 
-	// Here, we don't want to also do next.Gte(carbon.NewCarbon(dateRange.From))
-	// because if we do, we never start the loop since the condition is never met
-	// when the InitialToBePaidOn happened before the dateRange.From.
-	// And we're not concerned about filtering out paid expenses just yet, so if
-	// there are past unpaid expenses, we do want them in those results.
 	for next.Lte(carbon.NewCarbon(dateRange.To)) {
-		t, _ = tpl.getNextToBePaidAt(t)
-		next, _ = tpl.getNextToBePaidAt(t)
-		expenses = append(expenses, NewExpense(tpl.Amount, t.StdTime()))
+		tCarbon, err := tpl.getNextToBePaidAt(t)
+		if err != nil {
+			return nil, err
+		}
+		t = tCarbon
+
+		nextCarbon, err := tpl.getNextToBePaidAt(t)
+		if err != nil {
+			return nil, err
+		}
+		next = nextCarbon
+
+		expenses = append(expenses, NewExpense(
+			tpl.Amount,
+			t.StdTime(),
+			WithDescription(tpl.Description),
+			WithTemplateID(tpl.ID),
+		))
 	}
 
 	return expenses, nil

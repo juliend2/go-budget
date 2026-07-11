@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dromara/carbon/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DateRange struct {
@@ -12,9 +13,13 @@ type DateRange struct {
 }
 
 type Expense struct {
-	now        time.Time // DI for testing
-	Amount     int       // dollars
-	ToBePaidAt time.Time
+	now         time.Time          // DI for testing
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Description string             `bson:"description" json:"description"`
+	Amount      int                `bson:"amount" json:"amount"` // dollars
+	ToBePaidAt  time.Time          `bson:"to_be_paid_at" json:"to_be_paid_at"`
+	TemplateID  *primitive.ObjectID `bson:"template_id,omitempty" json:"template_id,omitempty"`
+	Payments    []Payment          `bson:"-" json:"payments,omitempty"` // populated at runtime
 }
 
 type ExpenseOption func(*Expense)
@@ -39,8 +44,40 @@ func WithNow(now time.Time) ExpenseOption {
 	}
 }
 
+func WithID(id primitive.ObjectID) ExpenseOption {
+	return func(e *Expense) {
+		e.ID = id
+	}
+}
+
+func WithDescription(desc string) ExpenseOption {
+	return func(e *Expense) {
+		e.Description = desc
+	}
+}
+
+func WithTemplateID(id primitive.ObjectID) ExpenseOption {
+	return func(e *Expense) {
+		e.TemplateID = &id
+	}
+}
+
+func WithPayments(payments []Payment) ExpenseOption {
+	return func(e *Expense) {
+		e.Payments = payments
+	}
+}
+
 func (e *Expense) IsDue() bool {
 	return !e.now.Before(e.ToBePaidAt)
+}
+
+func (e *Expense) IsPaid() bool {
+	sum := 0
+	for _, p := range e.Payments {
+		sum += p.Amount
+	}
+	return sum >= e.Amount
 }
 
 func GetPayDays(dateRange DateRange) []time.Time {
@@ -73,23 +110,33 @@ func GetPayDays(dateRange DateRange) []time.Time {
 
 func PutExpensesInTheirPayPeriods(pays []time.Time, exps []*Expense) map[string][]*Expense {
 	acc := make(map[string][]*Expense)
+	if len(pays) == 0 {
+		return acc
+	}
 
-	for i := range pays {
-		from := carbon.NewCarbon(pays[i])
-		to := carbon.ZeroValue()
-		if i != len(pays)-1 {
-			to = carbon.NewCarbon(pays[i+1])
+	firstPay := carbon.NewCarbon(pays[0])
+
+	for _, exp := range exps {
+		toBePaidAt := carbon.NewCarbon(exp.ToBePaidAt)
+
+		// Overdue unpaid check: put previous unpaid expenses in the first pay slot
+		if toBePaidAt.Lte(firstPay) {
+			if !exp.IsPaid() {
+				key := firstPay.ToDateString()
+				acc[key] = append(acc[key], exp)
+			}
+			continue
 		}
 
-		for _, exp := range exps {
-			toBePaidAt := carbon.NewCarbon(exp.ToBePaidAt)
-			if toBePaidAt.Gte(from) && (to.IsZero() || toBePaidAt.Lt(to)) {
-				_, ok := acc[from.ToDateString()]
-				if ok {
-					acc[from.ToDateString()] = append(acc[from.ToDateString()], exp)
-				} else {
-					acc[from.ToDateString()] = []*Expense{exp}
-				}
+		// Group other expenses in their corresponding slots (from, to]
+		for i := 0; i < len(pays)-1; i++ {
+			from := carbon.NewCarbon(pays[i])
+			to := carbon.NewCarbon(pays[i+1])
+
+			if toBePaidAt.Gt(from) && toBePaidAt.Lte(to) {
+				key := from.ToDateString()
+				acc[key] = append(acc[key], exp)
+				break
 			}
 		}
 	}
