@@ -116,7 +116,7 @@
                                 <tr class="{{if .IsPaid}}row-paid{{else}}row-unpaid{{end}}">
                                     <td>{{.Description}}</td>
                                     <td>{{.ToBePaidAt.Format "2006-01-02"}}</td>
-                                    <td class="amount">{{.Amount}} $</td>
+                                    <td class="amount">{{.GetRemainingAmount}} $</td>
                                     <td>
                                         {{if .IsPaid}}
                                         <span class="status-pill status-paid">Payé</span>

@@ -97,8 +97,8 @@ func handleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 		// Dashboard date range: from the start of current period (2026-06-30)
 		// up to 1 month in advance (2026-08-15)
 		dateRange := model.DateRange{
-			From: model.Date(2026, 6, 30),
-			To:   model.Date(2026, 8, 15),
+			From: model.Date(2026, 6, 30), // TODO: make ths dynamic
+			To:   model.Date(2026, 8, 15), // TODO: make ths dynamic
 		}
 
 		// 1. Generate/Ensure repeating expenses for active templates in the range

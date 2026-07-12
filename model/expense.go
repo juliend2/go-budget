@@ -13,13 +13,13 @@ type DateRange struct {
 }
 
 type Expense struct {
-	now         time.Time          // DI for testing
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Description string             `bson:"description" json:"description"`
-	Amount      int                `bson:"amount" json:"amount"` // dollars
-	ToBePaidAt  time.Time          `bson:"to_be_paid_at" json:"to_be_paid_at"`
+	now         time.Time           // DI for testing
+	ID          primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
+	Description string              `bson:"description" json:"description"`
+	Amount      int                 `bson:"amount" json:"amount"` // dollars
+	ToBePaidAt  time.Time           `bson:"to_be_paid_at" json:"to_be_paid_at"`
 	TemplateID  *primitive.ObjectID `bson:"template_id,omitempty" json:"template_id,omitempty"`
-	Payments    []Payment          `bson:"-" json:"payments,omitempty"` // populated at runtime
+	Payments    []Payment           `bson:"-" json:"payments,omitempty"` // populated at runtime
 }
 
 type ExpenseOption func(*Expense)
@@ -78,6 +78,14 @@ func (e *Expense) IsPaid() bool {
 		sum += p.Amount
 	}
 	return sum >= e.Amount
+}
+
+func (e *Expense) GetRemainingAmount() int {
+	rem := e.Amount
+	for _, p := range e.Payments {
+		rem -= p.Amount
+	}
+	return rem
 }
 
 func GetPayDays(dateRange DateRange) []time.Time {
