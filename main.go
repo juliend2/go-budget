@@ -14,6 +14,7 @@ import (
 
 	"desrosiers.org/budget/model"
 	"desrosiers.org/budget/repository"
+	"github.com/dromara/carbon/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -94,11 +95,9 @@ func handleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		// Dashboard date range: from the start of current period (2026-06-30)
-		// up to 1 month in advance (2026-08-15)
 		dateRange := model.DateRange{
-			From: model.Date(2026, 6, 30), // TODO: make ths dynamic
-			To:   model.Date(2026, 8, 15), // TODO: make ths dynamic
+			From: model.GetPreviousPayDate(time.Now()),
+			To:   model.GetNextPayDate(carbon.NewCarbon(time.Now()).AddMonth().StdTime()),
 		}
 
 		// 1. Generate/Ensure repeating expenses for active templates in the range
