@@ -89,16 +89,8 @@
         <!-- Pay periods lists -->
         <h2><i class="fa-solid fa-list-check" style="color: #38bdf8; margin-right: 0.5rem;"></i> Calendrier des payes et dépenses</h2>
         <div style="margin-top: 1.5rem;">
-            {{range $index, $period := .Periods}}
             <div class="period-card">
                 <div class="period-header">
-                    <h3>
-                        Sommaire au payeur du {{.PayDayStr}}
-                        {{if eq $index 0}}
-                        <span class="overdue-badge"><i class="fa-solid fa-triangle-exclamation"></i> Inclut retards</span>
-                        {{end}}
-                    </h3>
-                    <span class="period-dates">Du {{.PeriodStartStr}} au {{.PayDayStr}}</span>
                 </div>
                 <div class="table-container">
                     <table>
@@ -112,6 +104,7 @@
                             </tr>
                         </thead>
                         <tbody>
+                          {{range $index, $period := .Periods}}
                             {{if not .Expenses}}
                             <tr>
                                 <td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
@@ -146,11 +139,11 @@
                                 <td class="amount"><strong>{{.TotalAmount}} $</strong></td>
                                 <td colspan="2"></td>
                             </tr>
+                          {{end}}
                         </tbody>
                     </table>
                 </div>
             </div>
-            {{end}}
         </div>
     </div>
 </body>
