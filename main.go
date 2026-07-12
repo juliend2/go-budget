@@ -151,7 +151,7 @@ func handleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 
 			total := 0
 			for _, e := range exps {
-				total += e.Amount
+				total += e.GetRemainingAmount()
 			}
 
 			periods = append(periods, PeriodView{
