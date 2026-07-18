@@ -15,7 +15,6 @@ import (
 	"github.com/dromara/carbon/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"golang.org/x/oauth2"
 )
 
 type PeriodView struct {
@@ -25,7 +24,7 @@ type PeriodView struct {
 	TotalAmount    int
 }
 
-func HandleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template, oauth2Cnf oauth2.Config) http.HandlerFunc {
+func HandleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 

@@ -154,6 +154,56 @@ input:focus, select:focus {
   filter: brightness(1.15);
 }
 
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 1rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--status-unpaid-border);
+  border-radius: 8px;
+  color: var(--status-unpaid-text);
+  background: var(--status-unpaid-bg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  padding: 2.5rem 2rem;
+}
+
+.login-card h1 {
+  margin-bottom: 0.5rem;
+}
+
+.login-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: auto;
+  margin-top: 1.75rem;
+  text-decoration: none;
+}
+
 /* Pay period styling */
 .period-card {
   border: 1px solid var(--glass-border);

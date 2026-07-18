@@ -43,9 +43,10 @@ func main() {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint:     provider.Endpoint(),
-		RedirectURL:  "http://127.0.0.1:5556/auth/google/callback",
+		RedirectURL:  "http://127.0.0.1:8080/auth/google/callback",
 		Scopes:       []string{oidc.ScopeOpenID, oidc.ScopeProfile, oidc.ScopeEmail},
 	}
+	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -73,13 +74,27 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse pay HTML template: %v", err)
 	}
+	tmplLogin, err := template.ParseFS(viewsFS, "views/login.html")
+	if err != nil {
+		log.Fatalf("Failed to parse login HTML template: %v", err)
+	}
+
+	sessions := controller.NewSessionStore()
 
 	// Router setup
-	http.HandleFunc("/", controller.HandleDashboard(repo, tmplDashboard, config))
-	http.HandleFunc("/expense/pay", controller.HandleExpensePay(repo, tmplPay))
-	http.HandleFunc("/expense/add", controller.HandleAddExpense(repo))
-	http.HandleFunc("/template/add", controller.HandleAddTemplate(repo))
+	//
+	// Auth endpoints and static assets are public; everything else requires a
+	// valid session (RequireAuth redirects to /login otherwise).
+	http.HandleFunc("/login", controller.HandleLoginPage(tmplLogin))
+	http.HandleFunc("/auth/google/login", controller.HandleLogin(config))
+	http.HandleFunc("/logout", controller.HandleLogout(sessions))
+	http.HandleFunc("/auth/google/callback", controller.HandleCallback(config, verifier, sessions))
 	http.HandleFunc("/static/css/styles.css", controller.HandleCSS(viewsFS))
+
+	http.HandleFunc("/", controller.RequireAuth(sessions, controller.HandleDashboard(repo, tmplDashboard)))
+	http.HandleFunc("/expense/pay", controller.RequireAuth(sessions, controller.HandleExpensePay(repo, tmplPay)))
+	http.HandleFunc("/expense/add", controller.RequireAuth(sessions, controller.HandleAddExpense(repo)))
+	http.HandleFunc("/template/add", controller.RequireAuth(sessions, controller.HandleAddTemplate(repo)))
 
 	port := os.Getenv("PORT")
 	if port == "" {
