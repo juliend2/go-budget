@@ -17,9 +17,15 @@
                 <h1><i class="fa-solid fa-wallet"></i> Suivi Budgétaire</h1>
                 <div class="subtitle">Gestion des dépenses et payes récurrentes</div>
             </div>
-            <div class="subtitle">
-              Date courante : <strong>{{ .CurrentDate.Format "2006-01-02" }}</strong>
-              <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+                <nav class="main-nav">
+                    <a href="/" class="nav-link active">Tableau de bord</a>
+                    <a href="/templates" class="nav-link">Modèles</a>
+                    <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
+                </nav>
+                <div class="subtitle">
+                  Date courante : <strong>{{ .CurrentDate.Format "2006-01-02" }}</strong>
+                </div>
             </div>
         </header>
 
@@ -100,7 +106,6 @@
                                 <th>Description</th>
                                 <th>Date d'échéance</th>
                                 <th>Montant</th>
-                                <th>Statut</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -108,7 +113,7 @@
                           {{range $index, $period := .Periods}}
                             {{if not .Expenses}}
                             <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
+                                <td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
                                     Aucune dépense planifiée pour cette période.
                                 </td>
                             </tr>
@@ -119,13 +124,7 @@
                                     <td>{{.ToBePaidAt.Format "2006-01-02"}}</td>
                                     <td class="amount">{{.GetRemainingAmount}} $</td>
                                     <td>
-                                        {{if .IsPaid}}
-                                        <span class="status-pill status-paid">Payé</span>
-                                        {{else}}
-                                        <span class="status-pill status-unpaid">À payer</span>
-                                        {{end}}
-                                    </td>
-                                    <td>
+                                        <a href="/expense/edit?id={{.ID.Hex}}" class="btn-edit" style="text-decoration: none; display: inline-block;">Modif</a>
                                         {{if not .IsPaid}}
                                         <a href="/expense/pay?id={{.ID.Hex}}" class="btn-pay" style="text-decoration: none; display: inline-block;">Payer</a>
                                         {{else}}
@@ -138,7 +137,7 @@
                             <tr class="summary-row">
                                 <td colspan="2"><strong>En date du {{.PayDayStr}}</strong></td>
                                 <td class="amount"><strong>{{.TotalAmount}} $</strong></td>
-                                <td colspan="2"></td>
+                                <td></td>
                             </tr>
                           {{end}}
                         </tbody>

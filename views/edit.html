@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier une Dépense - Suivi Budgétaire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            transition: color 0.2s ease;
+        }
+        .back-link:hover {
+            color: #38bdf8;
+        }
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 800px;">
+        <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Retour au tableau de bord</a>
+
+        <header style="margin-bottom: 2rem;">
+            <div>
+                <h1><i class="fa-solid fa-pen-to-square"></i> Modifier la Dépense</h1>
+                <div class="subtitle">Mettre à jour les informations de cette dépense</div>
+            </div>
+        </header>
+
+        <div class="panel">
+            <form action="/expense/edit" method="POST">
+                <input type="hidden" name="expense_id" value="{{.Expense.ID.Hex}}">
+
+                <div class="form-group">
+                    <label for="edit-desc">Description</label>
+                    <input type="text" id="edit-desc" name="description" value="{{.Expense.Description}}" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="edit-amount">Montant ($)</label>
+                    <input type="number" id="edit-amount" name="amount" value="{{.Expense.Amount}}" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-date">Date d'échéance</label>
+                    <input type="date" id="edit-date" name="to_be_paid_at" value="{{.Expense.ToBePaidAt.Format "2006-01-02"}}" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                    <a href="/" class="btn-cancel">Annuler</a>
+                    <button type="submit" class="btn">Enregistrer les modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

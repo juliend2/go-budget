@@ -78,6 +78,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse login HTML template: %v", err)
 	}
+	tmplEdit, err := template.ParseFS(viewsFS, "views/edit.html")
+	if err != nil {
+		log.Fatalf("Failed to parse edit HTML template: %v", err)
+	}
+	tmplTemplates, err := template.ParseFS(viewsFS, "views/templates.html")
+	if err != nil {
+		log.Fatalf("Failed to parse templates HTML template: %v", err)
+	}
+	tmplTemplateEdit, err := template.ParseFS(viewsFS, "views/template_edit.html")
+	if err != nil {
+		log.Fatalf("Failed to parse template edit HTML template: %v", err)
+	}
 
 	sessions := controller.NewSessionStore()
 
@@ -93,8 +105,12 @@ func main() {
 
 	http.HandleFunc("/", controller.RequireAuth(sessions, controller.HandleDashboard(repo, tmplDashboard)))
 	http.HandleFunc("/expense/pay", controller.RequireAuth(sessions, controller.HandleExpensePay(repo, tmplPay)))
+	http.HandleFunc("/expense/edit", controller.RequireAuth(sessions, controller.HandleExpenseEdit(repo, tmplEdit)))
 	http.HandleFunc("/expense/add", controller.RequireAuth(sessions, controller.HandleAddExpense(repo)))
 	http.HandleFunc("/template/add", controller.RequireAuth(sessions, controller.HandleAddTemplate(repo)))
+	http.HandleFunc("/templates", controller.RequireAuth(sessions, controller.HandleTemplatesList(repo, tmplTemplates)))
+	http.HandleFunc("/template/edit", controller.RequireAuth(sessions, controller.HandleTemplateEdit(repo, tmplTemplateEdit)))
+	http.HandleFunc("/template/delete", controller.RequireAuth(sessions, controller.HandleDeleteTemplate(repo)))
 
 	port := os.Getenv("PORT")
 	if port == "" {

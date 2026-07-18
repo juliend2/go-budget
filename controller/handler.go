@@ -203,6 +203,78 @@ func HandleExpensePay(repo *repository.MongoDBRepository, tmpl *template.Templat
 	}
 }
 
+func HandleExpenseEdit(repo *repository.MongoDBRepository, tmpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		if r.Method == http.MethodGet {
+			// Serve the edit form pre-filled with the expense's current values.
+			idHex := r.URL.Query().Get("id")
+			id, err := primitive.ObjectIDFromHex(idHex)
+			if err != nil {
+				http.Error(w, "Invalid expense ID", http.StatusBadRequest)
+				return
+			}
+
+			expenses, err := repo.GetExpensesWithPayments(ctx, bson.M{"_id": id})
+			if err != nil || len(expenses) == 0 {
+				http.Error(w, "Expense not found", http.StatusNotFound)
+				return
+			}
+
+			data := struct {
+				Expense *model.Expense
+			}{
+				Expense: expenses[0],
+			}
+
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if err := tmpl.Execute(w, data); err != nil {
+				log.Printf("Error rendering edit template: %v", err)
+			}
+			return
+		}
+
+		if r.Method == http.MethodPost {
+			idHex := r.FormValue("expense_id")
+			id, err := primitive.ObjectIDFromHex(idHex)
+			if err != nil {
+				http.Error(w, "Invalid expense ID", http.StatusBadRequest)
+				return
+			}
+
+			desc := r.FormValue("description")
+			amount, err := strconv.Atoi(r.FormValue("amount"))
+			if err != nil || amount < 0 {
+				http.Error(w, "Invalid amount", http.StatusBadRequest)
+				return
+			}
+
+			toBePaidAt, err := time.Parse("2006-01-02", r.FormValue("to_be_paid_at"))
+			if err != nil {
+				http.Error(w, "Invalid date format", http.StatusBadRequest)
+				return
+			}
+
+			exp := &model.Expense{
+				ID:          id,
+				Description: desc,
+				Amount:      amount,
+				ToBePaidAt:  toBePaidAt,
+			}
+			if err := repo.UpdateExpense(ctx, exp); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to update expense: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 func HandleAddExpense(repo *repository.MongoDBRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -281,7 +353,134 @@ func HandleAddTemplate(repo *repository.MongoDBRepository) http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, "/templates", http.StatusSeeOther)
+	}
+}
+
+func HandleTemplatesList(repo *repository.MongoDBRepository, tmpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		templates, err := repo.GetAllTemplates(ctx)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to fetch templates: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		sort.Slice(templates, func(i, j int) bool {
+			return templates[i].Description < templates[j].Description
+		})
+
+		data := struct {
+			Templates []*model.ExpenseTemplate
+		}{
+			Templates: templates,
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.Execute(w, data); err != nil {
+			log.Printf("Error rendering templates list: %v", err)
+		}
+	}
+}
+
+func HandleTemplateEdit(repo *repository.MongoDBRepository, tmpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		if r.Method == http.MethodGet {
+			id, err := primitive.ObjectIDFromHex(r.URL.Query().Get("id"))
+			if err != nil {
+				http.Error(w, "Invalid template ID", http.StatusBadRequest)
+				return
+			}
+
+			tpl, err := repo.GetTemplateByID(ctx, id)
+			if err != nil {
+				http.Error(w, "Template not found", http.StatusNotFound)
+				return
+			}
+
+			data := struct {
+				Template *model.ExpenseTemplate
+			}{
+				Template: tpl,
+			}
+
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if err := tmpl.Execute(w, data); err != nil {
+				log.Printf("Error rendering template edit: %v", err)
+			}
+			return
+		}
+
+		if r.Method == http.MethodPost {
+			id, err := primitive.ObjectIDFromHex(r.FormValue("template_id"))
+			if err != nil {
+				http.Error(w, "Invalid template ID", http.StatusBadRequest)
+				return
+			}
+
+			desc := r.FormValue("description")
+			amount, err := strconv.Atoi(r.FormValue("amount"))
+			if err != nil || amount < 0 {
+				http.Error(w, "Invalid amount", http.StatusBadRequest)
+				return
+			}
+
+			initialDate, err := time.Parse("2006-01-02", r.FormValue("initial_to_be_paid_on"))
+			if err != nil {
+				http.Error(w, "Invalid date format", http.StatusBadRequest)
+				return
+			}
+
+			unit, err := strconv.Atoi(r.FormValue("interval_unit"))
+			if err != nil || unit <= 0 {
+				http.Error(w, "Invalid interval unit", http.StatusBadRequest)
+				return
+			}
+
+			tpl := &model.ExpenseTemplate{
+				ID:                        id,
+				Amount:                    amount,
+				Description:               desc,
+				InitialToBePaidOn:         initialDate,
+				RepeatabilityIntervalUnit: unit,
+				RepeatabilityIntervalPace: r.FormValue("interval_pace"),
+				IsOnHold:                  r.FormValue("is_on_hold") == "on",
+			}
+			if err := repo.SaveTemplate(ctx, tpl); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to update template: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, "/templates", http.StatusSeeOther)
+			return
+		}
+
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func HandleDeleteTemplate(repo *repository.MongoDBRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		id, err := primitive.ObjectIDFromHex(r.FormValue("template_id"))
+		if err != nil {
+			http.Error(w, "Invalid template ID", http.StatusBadRequest)
+			return
+		}
+
+		if err := repo.DeleteTemplate(r.Context(), id); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to delete template: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/templates", http.StatusSeeOther)
 	}
 }
 

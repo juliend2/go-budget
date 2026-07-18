@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modèles récurrents - Suivi Budgétaire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1><i class="fa-solid fa-arrows-spin"></i> Modèles récurrents</h1>
+                <div class="subtitle">Gérer vos dépenses récurrentes</div>
+            </div>
+            <nav class="main-nav">
+                <a href="/" class="nav-link">Tableau de bord</a>
+                <a href="/templates" class="nav-link active">Modèles</a>
+                <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
+            </nav>
+        </header>
+
+        <!-- Create form -->
+        <div class="panel">
+            <div class="form-title">
+                <i class="fa-solid fa-plus"></i> Nouveau modèle récurrent
+            </div>
+            <form action="/template/add" method="POST">
+                <div class="form-group">
+                    <label for="desc-rec">Description</label>
+                    <input type="text" id="desc-rec" name="description" placeholder="Ex: Loyer, Netflix" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount-rec">Montant ($)</label>
+                    <input type="number" id="amount-rec" name="amount" placeholder="0" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="date-rec">Première échéance</label>
+                    <input type="date" id="date-rec" name="initial_to_be_paid_on" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group">
+                        <label for="unit-rec">Intervalle</label>
+                        <input type="number" id="unit-rec" name="interval_unit" value="1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pace-rec">Fréquence</label>
+                        <select id="pace-rec" name="interval_pace">
+                            <option value="W">Semaine(s)</option>
+                            <option value="M" selected>Mois</option>
+                            <option value="Y">Année(s)</option>
+                            <option value="D">Jour(s)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn" style="background: linear-gradient(135deg, #818cf8, #4f46e5);">Créer le modèle récurrent</button>
+            </form>
+        </div>
+
+        <!-- Templates list -->
+        <div class="period-card">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Montant</th>
+                            <th>Première échéance</th>
+                            <th>Fréquence</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{if not .Templates}}
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
+                                Aucun modèle récurrent.
+                            </td>
+                        </tr>
+                        {{else}}
+                            {{range .Templates}}
+                            <tr class="{{if .IsOnHold}}row-paid{{end}}">
+                                <td>{{.Description}}</td>
+                                <td class="amount">{{.Amount}} $</td>
+                                <td>{{.InitialToBePaidOn.Format "2006-01-02"}}</td>
+                                <td>
+                                    Tous les {{.RepeatabilityIntervalUnit}}
+                                    {{if eq .RepeatabilityIntervalPace "W"}}semaine(s){{else if eq .RepeatabilityIntervalPace "M"}}mois{{else if eq .RepeatabilityIntervalPace "Y"}}année(s){{else if eq .RepeatabilityIntervalPace "D"}}jour(s){{else}}{{.RepeatabilityIntervalPace}}{{end}}
+                                </td>
+                                <td>
+                                    {{if .IsOnHold}}
+                                    <span class="status-pill status-unpaid">En pause</span>
+                                    {{else}}
+                                    <span class="status-pill status-paid">Actif</span>
+                                    {{end}}
+                                </td>
+                                <td style="white-space: nowrap;">
+                                    <a href="/template/edit?id={{.ID.Hex}}" class="btn-edit" style="text-decoration: none; display: inline-block;">Modif</a>
+                                    <form action="/template/delete" method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ce modèle récurrent ? Les dépenses déjà générées ne seront pas supprimées.');">
+                                        <input type="hidden" name="template_id" value="{{.ID.Hex}}">
+                                        <button type="submit" class="btn-delete">Suppr</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {{end}}
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

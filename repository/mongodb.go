@@ -74,6 +74,37 @@ func (r *MongoDBRepository) GetExpenseTemplates(ctx context.Context) ([]*model.E
 	return templates, nil
 }
 
+// GetAllTemplates retrieves every template, including those on hold. Used by the
+// template management page (GetExpenseTemplates only returns active ones).
+func (r *MongoDBRepository) GetAllTemplates(ctx context.Context) ([]*model.ExpenseTemplate, error) {
+	cursor, err := r.templates.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var templates []*model.ExpenseTemplate
+	if err := cursor.All(ctx, &templates); err != nil {
+		return nil, err
+	}
+	return templates, nil
+}
+
+// GetTemplateByID retrieves a single template by its ID.
+func (r *MongoDBRepository) GetTemplateByID(ctx context.Context, id primitive.ObjectID) (*model.ExpenseTemplate, error) {
+	var tpl model.ExpenseTemplate
+	if err := r.templates.FindOne(ctx, bson.M{"_id": id}).Decode(&tpl); err != nil {
+		return nil, err
+	}
+	return &tpl, nil
+}
+
+// DeleteTemplate removes a template by its ID.
+func (r *MongoDBRepository) DeleteTemplate(ctx context.Context, id primitive.ObjectID) error {
+	_, err := r.templates.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
 // GetExpensesWithPayments fetches expenses matching the filter and attaches their payments
 func (r *MongoDBRepository) GetExpensesWithPayments(ctx context.Context, filter bson.M) ([]*model.Expense, error) {
 	cursor, err := r.expenses.Find(ctx, filter)
@@ -161,6 +192,18 @@ func (r *MongoDBRepository) InsertOneTimeExpense(ctx context.Context, exp *model
 	}
 	exp.Payments = []model.Payment{}
 	return exp, nil
+}
+
+// UpdateExpense updates the editable fields of an existing expense.
+func (r *MongoDBRepository) UpdateExpense(ctx context.Context, exp *model.Expense) error {
+	filter := bson.M{"_id": exp.ID}
+	update := bson.M{"$set": bson.M{
+		"description":   exp.Description,
+		"amount":        exp.Amount,
+		"to_be_paid_at": exp.ToBePaidAt,
+	}}
+	_, err := r.expenses.UpdateOne(ctx, filter, update)
+	return err
 }
 
 // CreatePayment creates a new payment for an expense

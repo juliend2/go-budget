@@ -311,6 +311,69 @@ td {
   box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
 }
 
+.main-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  padding: 0.35rem 0.85rem;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link.active {
+  color: var(--text-primary);
+  background: var(--accent-cyan-glow);
+}
+
+.btn-delete {
+  background: var(--status-unpaid-bg);
+  border: 1px solid var(--status-unpaid-border);
+  color: var(--status-unpaid-text);
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+  background-color: var(--status-unpaid-text);
+  color: #020617;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
+}
+
+.btn-edit {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+  background-color: var(--text-secondary);
+  color: #020617;
+  box-shadow: 0 0 10px rgba(148, 163, 184, 0.35);
+}
+
 .text-completed {
   color: var(--status-paid-text);
   font-size: 1.1rem;
