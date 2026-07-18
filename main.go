@@ -12,17 +12,39 @@ import (
 	"desrosiers.org/budget/controller"
 	"desrosiers.org/budget/model"
 	"desrosiers.org/budget/repository"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/oauth2"
+)
+
+var (
+	clientID     = os.Getenv("GOOGLE_OAUTH2_CLIENT_ID")
+	clientSecret = os.Getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 )
 
 //go:embed views/*
 var viewsFS embed.FS
 
 func main() {
+	ctx := context.Background()
+
 	// Connect to MongoDB
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		mongoURI = "mongodb://root:password@localhost:27017/admin"
+	}
+
+	// OIDC / OAuth2:
+	provider, err := oidc.NewProvider(ctx, "https://accounts.google.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+	config := oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Endpoint:     provider.Endpoint(),
+		RedirectURL:  "http://127.0.0.1:5556/auth/google/callback",
+		Scopes:       []string{oidc.ScopeOpenID, oidc.ScopeProfile, oidc.ScopeEmail},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -53,7 +75,7 @@ func main() {
 	}
 
 	// Router setup
-	http.HandleFunc("/", controller.HandleDashboard(repo, tmplDashboard))
+	http.HandleFunc("/", controller.HandleDashboard(repo, tmplDashboard, config))
 	http.HandleFunc("/expense/pay", controller.HandleExpensePay(repo, tmplPay))
 	http.HandleFunc("/expense/add", controller.HandleAddExpense(repo))
 	http.HandleFunc("/template/add", controller.HandleAddTemplate(repo))
