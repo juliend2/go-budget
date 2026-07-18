@@ -162,10 +162,10 @@ func handleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 		}
 
 		data := struct {
-			CurrentDate string
+			CurrentDate time.Time
 			Periods     []PeriodView
 		}{
-			CurrentDate: time.Now().Format(time.DateOnly),
+			CurrentDate: time.Now(),
 			Periods:     periods,
 		}
 
