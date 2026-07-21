@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	clientID     = os.Getenv("GOOGLE_OAUTH2_CLIENT_ID")
-	clientSecret = os.Getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
+	clientID          = os.Getenv("GOOGLE_OAUTH2_CLIENT_ID")
+	clientSecret      = os.Getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
+	clientRedirectUrl = os.Getenv("OAUTH2_REDIRECT_URL")
 )
 
 //go:embed views/*
@@ -43,7 +44,7 @@ func main() {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint:     provider.Endpoint(),
-		RedirectURL:  "http://127.0.0.1:8080/auth/google/callback",
+		RedirectURL:  clientRedirectUrl,
 		Scopes:       []string{oidc.ScopeOpenID, oidc.ScopeProfile, oidc.ScopeEmail},
 	}
 	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})

@@ -1,0 +1,23 @@
+[Unit]
+Description=Budget app
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=[...DIR WHERE THE EXECUTABLE IS LOCATED...]
+ExecStart=[...EXECURABLE FILE PATH...]
+Restart=always
+RestartSec=5
+
+# Pass environment variables to your Go application
+Environment=GOOGLE_OAUTH2_CLIENT_ID=...
+Environment=GOOGLE_OAUTH2_CLIENT_SECRET=...
+Environment=OAUTH2_REDIRECT_URL=https://budget.desrosiers.org/auth/google/callback
+Environment=PORT=4000
+
+[Install]
+WantedBy=multi-user.target
+
