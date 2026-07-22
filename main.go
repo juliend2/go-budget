@@ -49,6 +49,13 @@ func main() {
 	}
 	verifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 
+	// Authorization: only these Google accounts may log in. Refuse to start
+	// without an allowlist, otherwise the app would be open to anyone.
+	allowedEmails := controller.ParseAllowedEmails(os.Getenv("ALLOWED_EMAILS"))
+	if len(allowedEmails) == 0 {
+		log.Fatal("ALLOWED_EMAILS is unset or empty; set it to a comma-separated list of authorized Google account emails")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -101,7 +108,7 @@ func main() {
 	http.HandleFunc("/login", controller.HandleLoginPage(tmplLogin))
 	http.HandleFunc("/auth/google/login", controller.HandleLogin(config))
 	http.HandleFunc("/logout", controller.HandleLogout(sessions))
-	http.HandleFunc("/auth/google/callback", controller.HandleCallback(config, verifier, sessions))
+	http.HandleFunc("/auth/google/callback", controller.HandleCallback(config, verifier, sessions, allowedEmails))
 	http.HandleFunc("/static/css/styles.css", controller.HandleCSS(viewsFS))
 
 	http.HandleFunc("/", controller.RequireAuth(sessions, controller.HandleDashboard(repo, tmplDashboard)))

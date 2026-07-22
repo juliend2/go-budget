@@ -21,6 +21,9 @@ In my case, it's pointing to `/var/lib/docker/volumes/budget_mongo-data/_data`
 
 - `GOOGLE_OAUTH2_CLIENT_ID`: required
 - `GOOGLE_OAUTH2_CLIENT_SECRET`: required
+- `ALLOWED_EMAILS`: required — comma-separated list of Google account emails
+  allowed to log in (e.g. `alice@gmail.com,bob@gmail.com`). Comparison is
+  case-insensitive. The app refuses to start if this is empty.
 - `PORT`: optional (defaults to `8080`)
 
 ## Deployment
@@ -39,6 +42,10 @@ In my case, it's pointing to `/var/lib/docker/volumes/budget_mongo-data/_data`
     ```bash
     sudo systemctl status budget
     ```
+
+## Security
+
+See [security-audit.md](security-audit.md) for the latest security audit findings.
 
 ## TODO
 

@@ -7,11 +7,25 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
+
+// ParseAllowedEmails builds a lookup set of authorized email addresses from a
+// comma-separated list (e.g. from the ALLOWED_EMAILS env var). Entries are
+// trimmed and lowercased for case-insensitive comparison.
+func ParseAllowedEmails(list string) map[string]bool {
+	allowed := make(map[string]bool)
+	for _, email := range strings.Split(list, ",") {
+		if email = strings.ToLower(strings.TrimSpace(email)); email != "" {
+			allowed[email] = true
+		}
+	}
+	return allowed
+}
 
 // randString returns a cryptographically secure, URL-safe random string used
 // for the OAuth2 state and OIDC nonce values.
@@ -70,9 +84,9 @@ func HandleLogin(oauth2Cnf oauth2.Config) http.HandlerFunc {
 }
 
 // HandleCallback completes the flow: it verifies the state cookie, exchanges the
-// authorization code for tokens, verifies the ID token and its nonce, and
-// displays the resulting claims.
-func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, store *SessionStore) http.HandlerFunc {
+// authorization code for tokens, verifies the ID token and its nonce, checks the
+// user's email against the allowlist, and starts a session.
+func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, store *SessionStore, allowedEmails map[string]bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -113,11 +127,19 @@ func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, sto
 		}
 
 		var claims struct {
-			Email string `json:"email"`
-			Name  string `json:"name"`
+			Email         string `json:"email"`
+			EmailVerified bool   `json:"email_verified"`
+			Name          string `json:"name"`
 		}
 		if err := idToken.Claims(&claims); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Only known, Google-verified accounts are allowed in.
+		if !claims.EmailVerified || !allowedEmails[strings.ToLower(claims.Email)] {
+			log.Printf("Login denied for %q (email_verified=%t)", claims.Email, claims.EmailVerified)
+			http.Error(w, "This account is not authorized to access this app.", http.StatusForbidden)
 			return
 		}
 
