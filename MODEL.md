@@ -8,26 +8,18 @@ This document tracks the assessment of the Go business logic and the decisions a
 
 ### Aligned Rules
 You receive a paycheck twice a month: on the **15th** and on the **last day of the month**. 
-* **Pay received on the Last Day of Month $M-1$** pays for expenses due **Day 1 to Day 15 of Month $M$** (Summary date: `M/15`).
-* **Pay received on the 15th of Month $M$** pays for expenses due **Day 16 to Last Day of Month $M$** (Summary date: `M/LastDay`).
+* **Pay received on the Last Day of Month $M-1$** pays for expenses due **$M-1$ to Day 14 of Month $M$** (Summary date: `M/15`).
+* **Pay received on the 15th of Month $M$** pays for expenses due **Day 15 to before-last day of Month $M$** (Summary date: `M/LastDay`).
 
 Thus, the pay periods are structured as `(from, to]` half-month intervals:
-* **Period 1**: `07/01/2026` to `07/15/2026` inclusive (Summary: `07/15/2026`).
-* **Period 2**: `07/16/2026` to `07/31/2026` inclusive (Summary: `07/31/2026`).
-* **Period 3**: `08/01/2026` to `08/15/2026` inclusive (Summary: `08/15/2026`).
+* **Period 1**: `06/30/2026` to `07/15/2026` exclusive (Summary: `07/15/2026`).
+* **Period 2**: `07/15/2026` to `07/31/2026` exclusive (Summary: `07/31/2026`).
+* **Period 3**: `07/31/2026` to `08/15/2026` exclusive (Summary: `08/15/2026`).
 
 ### Overdue/Unpaid Expenses
 * **Behavior**: Unpaid expenses from previous periods (where `ToBePaidAt` is prior to the start of the first displayed period) must be carried forward and grouped into the **first visible pay period**.
 * **Total Calculation**: Their amounts will be accumulated in the first payday's summary (`Sommaire en date du`).
-* **Implementation**: We will refactor `PutExpensesInTheirPayPeriods()` to filter and group these outstanding past expenses accordingly.
 
----
-
-## 🔄 2. Repeating Expense Generation
-
-* **Infinite Loop Bug**: **To be fixed.** We will validate the pace inside `GenerateRepeatingExpenses()` and handle/propagate errors returned by `getNextToBePaidAt()`.
-* **Future Expense Generation Leak**: No change required. We will leave the logic as is.
-* **Performance / Efficiency**: No change required for now. We will wait until performance issues become perceptible before optimizing the regeneration logic.
 
 ---
 
