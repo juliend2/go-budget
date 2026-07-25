@@ -115,6 +115,74 @@ func TestIntegrationRepeatingExpensesAreProperlyFilledIntoPayDayGroupings(t *tes
 	}
 }
 
+func TestExpenseTemplateWithPayPaceCreatesExpenseOnEveryPayDay(t *testing.T) {
+	// Arrange
+	expTpl := model.NewExpenseTemplate(
+		100,
+		"épicerie",
+		model.WithInitialToBePaidOn(2026, time.June, 15),
+		model.WithRepeatabilityInterval(1, "P"),
+	)
+
+	// Act
+	expenses, err := expTpl.GenerateRepeatingExpenses(
+		model.DateRange{
+			From: model.Date(2026, time.June, 1),
+			To:   model.Date(2026, time.July, 31),
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GenerateRepeatingExpenses() error = %v", err)
+	}
+	if len(expenses) != 4 {
+		t.Fatalf("len(GenerateRepeatingExpenses()) = %d; want 4", len(expenses))
+	}
+
+	want := []string{"2026-06-15", "2026-06-30", "2026-07-15", "2026-07-31"}
+	for i, w := range want {
+		got := carbon.NewCarbon(expenses[i].ToBePaidAt).ToDateString()
+		if got != w {
+			t.Errorf("expenses[%d].ToBePaidAt = %s; want %s", i, got, w)
+		}
+	}
+}
+
+func TestExpenseTemplateWithPayPaceCreatesExpenseOnEveryOtherPayDay(t *testing.T) {
+	// Arrange
+	expTpl := model.NewExpenseTemplate(
+		100,
+		"épicerie",
+		model.WithInitialToBePaidOn(2026, time.June, 30),
+		model.WithRepeatabilityInterval(2, "P"),
+	)
+
+	// Act
+	expenses, err := expTpl.GenerateRepeatingExpenses(
+		model.DateRange{
+			From: model.Date(2026, time.June, 1),
+			To:   model.Date(2026, time.August, 31),
+		},
+	)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("GenerateRepeatingExpenses() error = %v", err)
+	}
+	if len(expenses) != 3 {
+		t.Fatalf("len(GenerateRepeatingExpenses()) = %d; want 3", len(expenses))
+	}
+
+	want := []string{"2026-06-30", "2026-07-31", "2026-08-31"}
+	for i, w := range want {
+		got := carbon.NewCarbon(expenses[i].ToBePaidAt).ToDateString()
+		if got != w {
+			t.Errorf("expenses[%d].ToBePaidAt = %s; want %s", i, got, w)
+		}
+	}
+}
+
 func TestInvalidPaceReturnsError(t *testing.T) {
 	// Arrange
 	expTpl := model.NewExpenseTemplate(

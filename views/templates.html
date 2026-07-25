@@ -54,6 +54,7 @@
                             <option value="M" selected>Mois</option>
                             <option value="Y">Année(s)</option>
                             <option value="D">Jour(s)</option>
+                            <option value="P">Paye(s)</option>
                         </select>
                     </div>
                 </div>
@@ -90,7 +91,7 @@
                                 <td>{{.InitialToBePaidOn.Format "2006-01-02"}}</td>
                                 <td>
                                     Tous les {{.RepeatabilityIntervalUnit}}
-                                    {{if eq .RepeatabilityIntervalPace "W"}}semaine(s){{else if eq .RepeatabilityIntervalPace "M"}}mois{{else if eq .RepeatabilityIntervalPace "Y"}}année(s){{else if eq .RepeatabilityIntervalPace "D"}}jour(s){{else}}{{.RepeatabilityIntervalPace}}{{end}}
+                                    {{if eq .RepeatabilityIntervalPace "W"}}semaine(s){{else if eq .RepeatabilityIntervalPace "M"}}mois{{else if eq .RepeatabilityIntervalPace "Y"}}année(s){{else if eq .RepeatabilityIntervalPace "D"}}jour(s){{else if eq .RepeatabilityIntervalPace "P"}}paye(s){{else}}{{.RepeatabilityIntervalPace}}{{end}}
                                 </td>
                                 <td>
                                     {{if .IsOnHold}}

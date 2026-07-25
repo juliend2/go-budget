@@ -57,7 +57,7 @@ Tracks payments made toward individual expenses. An expense can be paid in full 
 * `Amount`: int
 * `InitialToBePaidOn`: time.Time
 * `RepeatabilityIntervalUnit`: int
-* `RepeatabilityIntervalPace`: string
+* `RepeatabilityIntervalPace`: string — `D` (day), `W` (week), `M` (month), `Y` (year), or `P` (pay: the 15th and last day of the month; the unit is the number of pay days to skip, e.g. 1 = every pay, 2 = every other pay)
 * `IsOnHold`: bool
 
 ---

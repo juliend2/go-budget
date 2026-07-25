@@ -62,6 +62,13 @@ func (tpl *ExpenseTemplate) getNextToBePaidAt(t *carbon.Carbon) (*carbon.Carbon,
 		return t.AddMonths(tpl.RepeatabilityIntervalUnit), nil
 	case "Y":
 		return t.AddYears(tpl.RepeatabilityIntervalUnit), nil
+	case "P":
+		// "Paye": the next pay day(s) (15th or last day of the month) after t
+		next := t
+		for i := 0; i < tpl.RepeatabilityIntervalUnit; i++ {
+			next = nextPayDateAfter(next)
+		}
+		return next, nil
 	default:
 		return carbon.ZeroValue(), errors.New(fmt.Sprintf("Time interval pace '%s' not supported", pace))
 	}
