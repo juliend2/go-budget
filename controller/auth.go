@@ -38,14 +38,21 @@ func randString(nByte int) (string, error) {
 }
 
 // setCallbackCookie stores a short-lived, HTTP-only cookie holding the state or
-// nonce so the callback can verify the round-trip.
+// nonce so the callback can verify the round-trip. Path is "/" so the cookie is
+// sent to the callback regardless of which route started the flow, and SameSite
+// Lax still allows the cookie on Google's top-level redirect back to us.
+// NOTE: cookies are host-scoped — the login flow must be started from the same
+// host as OAUTH2_REDIRECT_URL (e.g. don't log in via localhost if the redirect
+// URL uses 127.0.0.1), otherwise the callback won't receive these cookies.
 func setCallbackCookie(w http.ResponseWriter, r *http.Request, name, value string) {
 	c := &http.Cookie{
 		Name:     name,
 		Value:    value,
+		Path:     "/",
 		MaxAge:   int(time.Hour.Seconds()),
 		Secure:   r.TLS != nil,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, c)
 }
@@ -92,6 +99,11 @@ func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, sto
 
 		state, err := r.Cookie("state")
 		if err != nil {
+			cookieNames := []string{}
+			for _, c := range r.Cookies() {
+				cookieNames = append(cookieNames, c.Name)
+			}
+			log.Printf("Callback without state cookie: Host=%q, cookies received=%v", r.Host, cookieNames)
 			http.Error(w, "state not found", http.StatusBadRequest)
 			return
 		}
