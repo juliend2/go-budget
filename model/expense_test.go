@@ -84,12 +84,14 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	}
 
 	expenses := []*model.Expense{
-		// first pay period: (2026-06-30, 2026-07-15]
+		// first pay period: [2026-06-30, 2026-07-15)
+		model.NewExpense(5, model.Date(2026, time.June, 30)),  // due on the pay day -> belongs here
 		model.NewExpense(10, model.Date(2026, time.July, 1)),
-		model.NewExpense(20, model.Date(2026, time.July, 15)),
-		// second pay period: (2026-07-15, 2026-07-31]
+		model.NewExpense(15, model.Date(2026, time.July, 14)),
+		// second pay period: [2026-07-15, 2026-07-31)
+		model.NewExpense(20, model.Date(2026, time.July, 15)), // due on the pay day -> belongs here
 		model.NewExpense(30, model.Date(2026, time.July, 16)),
-		model.NewExpense(40, model.Date(2026, time.July, 31)),
+		model.NewExpense(40, model.Date(2026, time.July, 30)),
 	}
 
 	// Act
@@ -100,16 +102,46 @@ func TestPutExpensesInTheirPayPeriods(t *testing.T) {
 	if !ok {
 		t.Errorf("Expected 2026-06-30 to exist")
 	}
-	if len(list) != 2 {
-		t.Errorf("len(paydayExpenses['2026-06-30']) = %d; want 2", len(list))
+	if len(list) != 3 {
+		t.Errorf("len(paydayExpenses['2026-06-30']) = %d; want 3", len(list))
 	}
 
 	list2, ok2 := paydayExpenses["2026-07-15"]
 	if !ok2 {
 		t.Errorf("Expected 2026-07-15 to exist")
 	}
-	if len(list2) != 2 {
-		t.Errorf("len(paydayExpenses['2026-07-15']) = %d; want 2", len(list2))
+	if len(list2) != 3 {
+		t.Errorf("len(paydayExpenses['2026-07-15']) = %d; want 3", len(list2))
+	}
+}
+
+func TestPutExpensesInTheirPayPeriods_PayDayStartsItsOwnPeriod(t *testing.T) {
+	// Regression: expenses due on (or after) a pay day must fall on the pay
+	// that starts on that day, not on the previous pay.
+	payDays := []time.Time{
+		model.Date(2026, time.July, 31),
+		model.Date(2026, time.August, 15),
+		model.Date(2026, time.August, 31),
+		model.Date(2026, time.September, 15),
+	}
+
+	expenses := []*model.Expense{
+		model.NewExpense(12, model.Date(2026, time.August, 15)), // Crave-like: on the pay day
+		model.NewExpense(12, model.Date(2026, time.August, 16)),
+		model.NewExpense(140, model.Date(2026, time.August, 31)), // Provision Hydro: on the pay day
+		model.NewExpense(50, model.Date(2026, time.September, 1)),
+	}
+
+	paydayExpenses := model.PutExpensesInTheirPayPeriods(payDays, expenses)
+
+	if got := len(paydayExpenses["2026-07-31"]); got != 0 {
+		t.Errorf("pay starting 2026-07-31 should hold no Aug 15/16 expenses; got %d", got)
+	}
+	if got := len(paydayExpenses["2026-08-15"]); got != 2 {
+		t.Errorf("pay starting 2026-08-15 should hold the Aug 15 and Aug 16 expenses; got %d", got)
+	}
+	if got := len(paydayExpenses["2026-08-31"]); got != 2 {
+		t.Errorf("pay starting 2026-08-31 should hold the Aug 31 and Sep 1 expenses; got %d", got)
 	}
 }
 

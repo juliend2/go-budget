@@ -18,10 +18,11 @@ import (
 )
 
 type PeriodView struct {
-	PeriodStartStr string
-	PayDayStr      string
-	Expenses       []*model.Expense
-	TotalAmount    int
+	// PayDayStr is the day the pay is received (the start of the period). The
+	// pay received on this day covers every expense in the period.
+	PayDayStr   string
+	Expenses    []*model.Expense
+	TotalAmount int
 }
 
 func HandleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template) http.HandlerFunc {
@@ -72,7 +73,6 @@ func HandleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 		var periods []PeriodView
 		for i := 0; i < len(payDays)-1; i++ {
 			start := payDays[i]
-			end := payDays[i+1]
 
 			exps := grouped[start.Format("2006-01-02")]
 
@@ -87,10 +87,9 @@ func HandleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 			}
 
 			periods = append(periods, PeriodView{
-				PeriodStartStr: start.Format("01/02/2006"),
-				PayDayStr:      end.Format("01/02/2006"),
-				Expenses:       exps,
-				TotalAmount:    total,
+				PayDayStr:   start.Format("01/02/2006"),
+				Expenses:    exps,
+				TotalAmount: total,
 			})
 		}
 

@@ -13,10 +13,10 @@ func Date(y int, m time.Month, d int) time.Time {
 func GetPreviousPayDate(t time.Time) time.Time {
 	d := carbon.NewCarbon(t)
 	if d.Day() > 15 {
-		return d.SetDay(15).StdTime()
+		return d.SetDay(15).StartOfDay().StdTime()
 	} else {
 		// past month's last day:
-		return d.StartOfMonth().SubDay().StdTime()
+		return d.StartOfMonth().SubDay().StartOfDay().StdTime()
 	}
 }
 

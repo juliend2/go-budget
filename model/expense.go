@@ -90,10 +90,10 @@ func (e *Expense) GetRemainingAmount() int {
 
 func GetPayDays(dateRange DateRange) []time.Time {
 	dates := []time.Time{}
-	firstValue := carbon.NewCarbon(dateRange.From)
+	firstValue := carbon.NewCarbon(dateRange.From).StartOfDay()
 	d := dateRange.From.Day()
 	if d > 15 {
-		firstValue = firstValue.EndOfMonth()
+		firstValue = firstValue.EndOfMonth().StartOfDay()
 	} else if d < 15 {
 		firstValue = firstValue.SetDay(15)
 	}
@@ -104,7 +104,7 @@ func GetPayDays(dateRange DateRange) []time.Time {
 	for carbon.NewCarbon(dates[len(dates)-1]).Lt(carbon.NewCarbon(dateRange.To)) {
 		value := carbon.NewCarbon(dates[len(dates)-1])
 		if value.Day() == 15 {
-			value = value.EndOfMonth()
+			value = value.EndOfMonth().StartOfDay()
 		} else {
 			// Assume it can only be 15th or last-of-month
 			// so go to 1st of next month and set the day to 15th
@@ -122,13 +122,14 @@ func PutExpensesInTheirPayPeriods(pays []time.Time, exps []*Expense) map[string]
 		return acc
 	}
 
-	firstPay := carbon.NewCarbon(pays[0])
+	firstPay := carbon.NewCarbon(pays[0]).StartOfDay()
 
 	for _, exp := range exps {
-		toBePaidAt := carbon.NewCarbon(exp.ToBePaidAt)
+		toBePaidAt := carbon.NewCarbon(exp.ToBePaidAt).StartOfDay()
 
-		// Overdue unpaid check: put previous unpaid expenses in the first pay slot
-		if toBePaidAt.Lte(firstPay) {
+		// Overdue unpaid check: put unpaid expenses due strictly before the
+		// first visible pay day into the first pay slot.
+		if toBePaidAt.Lt(firstPay) {
 			if !exp.IsPaid() {
 				key := firstPay.ToDateString()
 				acc[key] = append(acc[key], exp)
@@ -136,12 +137,13 @@ func PutExpensesInTheirPayPeriods(pays []time.Time, exps []*Expense) map[string]
 			continue
 		}
 
-		// Group other expenses in their corresponding slots (from, to]
+		// Group other expenses in their corresponding slots [from, to):
+		// an expense due on a pay day belongs to the period that pay day starts.
 		for i := 0; i < len(pays)-1; i++ {
-			from := carbon.NewCarbon(pays[i])
-			to := carbon.NewCarbon(pays[i+1])
+			from := carbon.NewCarbon(pays[i]).StartOfDay()
+			to := carbon.NewCarbon(pays[i+1]).StartOfDay()
 
-			if toBePaidAt.Gt(from) && toBePaidAt.Lte(to) {
+			if toBePaidAt.Gte(from) && toBePaidAt.Lt(to) {
 				key := from.ToDateString()
 				acc[key] = append(acc[key], exp)
 				break
