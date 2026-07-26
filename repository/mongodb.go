@@ -247,6 +247,33 @@ func (r *MongoDBRepository) GetOrInsertExpense(ctx context.Context, exp *model.E
 	return exp, nil
 }
 
+// GetExpensesForDashboard returns all relevant expenses for the dashboard dateRange,
+// including past unpaid (overdue) expenses.
+func (r *MongoDBRepository) GetExpensesForDashboard(ctx context.Context, dateRange model.DateRange) ([]*model.Expense, error) {
+	// Fetch all expenses up to dateRange.To
+	filter := bson.M{
+		"to_be_paid_at": bson.M{"$lte": dateRange.To},
+	}
+	allExps, err := r.GetExpensesWithPayments(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.Expense
+	for _, exp := range allExps {
+		// If the expense is on or before dateRange.From, only include it if it's unpaid
+		if exp.ToBePaidAt.Before(dateRange.From) || exp.ToBePaidAt.Equal(dateRange.From) {
+			if !exp.IsPaid() {
+				result = append(result, exp)
+			}
+		} else {
+			result = append(result, exp)
+		}
+	}
+
+	return result, nil
+}
+
 // InsertOneTimeExpense inserts a new one-time expense
 func (r *MongoDBRepository) InsertOneTimeExpense(ctx context.Context, exp *model.Expense) (*model.Expense, error) {
 	if exp.ID.IsZero() {
@@ -273,6 +300,10 @@ func (r *MongoDBRepository) UpdateExpense(ctx context.Context, exp *model.Expens
 	return err
 }
 
+/* * * * * * *
+ * Payments  *
+ * * * * * * */
+
 // CreatePayment creates a new payment for an expense
 func (r *MongoDBRepository) CreatePayment(ctx context.Context, expenseID primitive.ObjectID, amount int, paidAt time.Time) (*model.Payment, error) {
 	payment := model.Payment{
@@ -286,31 +317,4 @@ func (r *MongoDBRepository) CreatePayment(ctx context.Context, expenseID primiti
 		return nil, err
 	}
 	return &payment, nil
-}
-
-// GetExpensesForDashboard returns all relevant expenses for the dashboard dateRange,
-// including past unpaid (overdue) expenses.
-func (r *MongoDBRepository) GetExpensesForDashboard(ctx context.Context, dateRange model.DateRange) ([]*model.Expense, error) {
-	// Fetch all expenses up to dateRange.To
-	filter := bson.M{
-		"to_be_paid_at": bson.M{"$lte": dateRange.To},
-	}
-	allExps, err := r.GetExpensesWithPayments(ctx, filter)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*model.Expense
-	for _, exp := range allExps {
-		// If the expense is on or before dateRange.From, only include it if it's unpaid
-		if exp.ToBePaidAt.Before(dateRange.From) || exp.ToBePaidAt.Equal(dateRange.From) {
-			if !exp.IsPaid() {
-				result = append(result, exp)
-			}
-		} else {
-			result = append(result, exp)
-		}
-	}
-
-	return result, nil
 }
