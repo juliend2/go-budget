@@ -1,9 +1,12 @@
 package controller
 
 import (
+	"context"
+	"log"
 	"net/http"
-	"sync"
 	"time"
+
+	"desrosiers.org/budget/model"
 )
 
 // sessionCookieName is the cookie holding the opaque session ID.
@@ -12,49 +15,56 @@ const sessionCookieName = "session"
 // sessionTTL is how long a session stays valid after login.
 const sessionTTL = 24 * time.Hour
 
-// Session holds the authenticated user's identity for the life of the cookie.
-type Session struct {
-	Email     string
-	Name      string
-	ExpiresAt time.Time
+// SessionRepository is the persistence the session store needs. It is satisfied
+// by *repository.MongoDBRepository.
+type SessionRepository interface {
+	CreateSession(ctx context.Context, sess *model.Session) error
+	GetSessionBySecureID(ctx context.Context, secureID string) (*model.Session, error)
+	DeleteSession(ctx context.Context, secureID string) error
 }
 
-// SessionStore is a concurrency-safe, in-memory store keyed by session ID.
-// Sessions are lost on restart; swap this for a persistent store later if needed.
+// SessionStore persists authenticated sessions in MongoDB, keyed by the opaque
+// secure ID stored in the browser cookie. Sessions now survive restarts.
 type SessionStore struct {
-	mu       sync.RWMutex
-	sessions map[string]Session
+	repo SessionRepository
 }
 
-func NewSessionStore() *SessionStore {
-	return &SessionStore{sessions: make(map[string]Session)}
+func NewSessionStore(repo SessionRepository) *SessionStore {
+	return &SessionStore{repo: repo}
 }
 
-func (s *SessionStore) Create(id string, sess Session) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.sessions[id] = sess
+// Create persists a new session for secureID.
+func (s *SessionStore) Create(ctx context.Context, secureID, email, name string, expiresAt time.Time) error {
+	return s.repo.CreateSession(ctx, &model.Session{
+		SecureID:  secureID,
+		Email:     email,
+		Name:      name,
+		ExpiresAt: expiresAt,
+	})
 }
 
-// Get returns the session for id, or ok=false if it is missing or expired.
-func (s *SessionStore) Get(id string) (Session, bool) {
-	s.mu.RLock()
-	sess, ok := s.sessions[id]
-	s.mu.RUnlock()
-	if !ok {
-		return Session{}, false
+// Get returns the session for secureID, or ok=false if it is missing or expired.
+// Expired sessions are deleted as a side effect.
+func (s *SessionStore) Get(ctx context.Context, secureID string) (*model.Session, bool) {
+	sess, err := s.repo.GetSessionBySecureID(ctx, secureID)
+	if err != nil {
+		log.Printf("Error fetching session: %v", err)
+		return nil, false
+	}
+	if sess == nil {
+		return nil, false
 	}
 	if time.Now().After(sess.ExpiresAt) {
-		s.Delete(id)
-		return Session{}, false
+		if err := s.repo.DeleteSession(ctx, secureID); err != nil {
+			log.Printf("Error deleting expired session: %v", err)
+		}
+		return nil, false
 	}
 	return sess, true
 }
 
-func (s *SessionStore) Delete(id string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.sessions, id)
+func (s *SessionStore) Delete(ctx context.Context, secureID string) error {
+	return s.repo.DeleteSession(ctx, secureID)
 }
 
 // RequireAuth wraps a handler so that requests without a valid session are
@@ -66,7 +76,7 @@ func RequireAuth(store *SessionStore, next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		if _, ok := store.Get(c.Value); !ok {
+		if _, ok := store.Get(r.Context(), c.Value); !ok {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
@@ -78,7 +88,9 @@ func RequireAuth(store *SessionStore, next http.HandlerFunc) http.HandlerFunc {
 func HandleLogout(store *SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if c, err := r.Cookie(sessionCookieName); err == nil {
-			store.Delete(c.Value)
+			if err := store.Delete(r.Context(), c.Value); err != nil {
+				log.Printf("Error deleting session on logout: %v", err)
+			}
 		}
 		http.SetCookie(w, &http.Cookie{
 			Name:     sessionCookieName,

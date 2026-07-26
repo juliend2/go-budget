@@ -99,7 +99,7 @@ func main() {
 		log.Fatalf("Failed to parse template edit HTML template: %v", err)
 	}
 
-	sessions := controller.NewSessionStore()
+	sessions := controller.NewSessionStore(repo)
 
 	// Router setup
 	//

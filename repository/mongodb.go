@@ -17,6 +17,7 @@ type MongoDBRepository struct {
 	templates *mongo.Collection
 	expenses  *mongo.Collection
 	payments  *mongo.Collection
+	sessions  *mongo.Collection
 }
 
 func NewMongoDBRepository(ctx context.Context, uri, dbName string) (*MongoDBRepository, error) {
@@ -32,18 +33,46 @@ func NewMongoDBRepository(ctx context.Context, uri, dbName string) (*MongoDBRepo
 	}
 
 	db := client.Database(dbName)
-	return &MongoDBRepository{
+	r := &MongoDBRepository{
 		client:    client,
 		db:        db,
 		templates: db.Collection("expense_templates"),
 		expenses:  db.Collection("expenses"),
 		payments:  db.Collection("payments"),
-	}, nil
+		sessions:  db.Collection("sessions"),
+	}
+
+	if err := r.ensureSessionIndexes(ctx); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// ensureSessionIndexes creates a unique index on secure_id (the opaque cookie
+// value) and a TTL index on expires_at so MongoDB removes expired sessions on
+// its own, complementing the application-level expiry check.
+func (r *MongoDBRepository) ensureSessionIndexes(ctx context.Context) error {
+	_, err := r.sessions.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "secure_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "expires_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(0),
+		},
+	})
+	return err
 }
 
 func (r *MongoDBRepository) Close(ctx context.Context) error {
 	return r.client.Disconnect(ctx)
 }
+
+/* * * * * * * * * * *
+ * Expense Templates *
+ * * * * * * * * * * */
 
 // SaveTemplate inserts or updates an expense template
 func (r *MongoDBRepository) SaveTemplate(ctx context.Context, tpl *model.ExpenseTemplate) error {
@@ -104,6 +133,44 @@ func (r *MongoDBRepository) DeleteTemplate(ctx context.Context, id primitive.Obj
 	_, err := r.templates.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
+
+/* * * * * * *
+ * Sessions  *
+ * * * * * * */
+
+// CreateSession persists a new authenticated session.
+func (r *MongoDBRepository) CreateSession(ctx context.Context, sess *model.Session) error {
+	if sess.ID.IsZero() {
+		sess.ID = primitive.NewObjectID()
+	}
+	_, err := r.sessions.InsertOne(ctx, sess)
+	return err
+}
+
+// GetSessionBySecureID looks up a session by its opaque cookie value. It returns
+// (nil, nil) when no matching session exists, so callers can distinguish "not
+// found" from a real error.
+func (r *MongoDBRepository) GetSessionBySecureID(ctx context.Context, secureID string) (*model.Session, error) {
+	var sess model.Session
+	err := r.sessions.FindOne(ctx, bson.M{"secure_id": secureID}).Decode(&sess)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &sess, nil
+}
+
+// DeleteSession removes a session by its secure ID (e.g. on logout or expiry).
+func (r *MongoDBRepository) DeleteSession(ctx context.Context, secureID string) error {
+	_, err := r.sessions.DeleteOne(ctx, bson.M{"secure_id": secureID})
+	return err
+}
+
+/* * * * * * *
+ * Expenses  *
+ * * * * * * */
 
 // GetExpensesWithPayments fetches expenses matching the filter and attaches their payments
 func (r *MongoDBRepository) GetExpensesWithPayments(ctx context.Context, filter bson.M) ([]*model.Expense, error) {

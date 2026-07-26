@@ -90,9 +90,12 @@ func HandleLogin(oauth2Cnf oauth2.Config) http.HandlerFunc {
 	}
 }
 
-// HandleCallback completes the flow: it verifies the state cookie, exchanges the
-// authorization code for tokens, verifies the ID token and its nonce, checks the
-// user's email against the allowlist, and starts a session.
+// HandleCallback completes the flow:
+// - it verifies the state cookie
+// - exchanges the authorization code for tokens
+// - verifies the ID token and its nonce
+// - checks the user's email against the allowlist
+// - and starts a session
 func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, store *SessionStore, allowedEmails map[string]bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -161,11 +164,11 @@ func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, sto
 			http.Error(w, "Internal error", http.StatusInternalServerError)
 			return
 		}
-		store.Create(sessionID, Session{
-			Email:     claims.Email,
-			Name:      claims.Name,
-			ExpiresAt: time.Now().Add(sessionTTL),
-		})
+		if err := store.Create(ctx, sessionID, claims.Email, claims.Name, time.Now().Add(sessionTTL)); err != nil {
+			log.Printf("Error persisting session: %v", err)
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
+		}
 		http.SetCookie(w, &http.Cookie{
 			Name:     sessionCookieName,
 			Value:    sessionID,
