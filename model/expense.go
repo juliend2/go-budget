@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dromara/carbon/v2"
@@ -144,6 +145,7 @@ func PutExpensesInTheirPayPeriods(pays []time.Time, exps []*Expense) map[string]
 			to := carbon.NewCarbon(pays[i+1]).StartOfDay()
 
 			if toBePaidAt.Gte(from) && toBePaidAt.Lt(to) {
+				fmt.Println("toBePaidAt: " + toBePaidAt.ToDateString() + ", from: " + from.ToDateString() + ", to: " + to.ToDateString())
 				key := from.ToDateString()
 				acc[key] = append(acc[key], exp)
 				break

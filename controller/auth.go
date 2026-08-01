@@ -57,6 +57,31 @@ func setCallbackCookie(w http.ResponseWriter, r *http.Request, name, value strin
 	http.SetCookie(w, c)
 }
 
+// cookieValues returns the values of every cookie with the given name. A
+// browser can hold several same-named cookies (e.g. leftovers scoped to a
+// different Path or Domain), which are all sent on the callback; r.Cookie
+// would only return the first one — possibly a stale one shadowing the value
+// we just set.
+func cookieValues(r *http.Request, name string) []string {
+	vals := []string{}
+	for _, c := range r.Cookies() {
+		if c.Name == name {
+			vals = append(vals, c.Value)
+		}
+	}
+	return vals
+}
+
+// contains reports whether want is among vals.
+func contains(vals []string, want string) bool {
+	for _, v := range vals {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
+
 // HandleLoginPage serves the public login landing page. It is a plain page with
 // a "sign in" button and does NOT start the OAuth flow, so landing here after
 // logout does not silently re-authenticate the user.
@@ -100,8 +125,12 @@ func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, sto
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		state, err := r.Cookie("state")
-		if err != nil {
+		// Accept the round-trip if ANY state cookie matches: browsers may send
+		// duplicate same-named cookies (see cookieValues), only one of which is
+		// the one we just set. CSRF protection is unaffected — an attacker
+		// still can't plant a cookie whose value matches the query state.
+		states := cookieValues(r, "state")
+		if len(states) == 0 {
 			cookieNames := []string{}
 			for _, c := range r.Cookies() {
 				cookieNames = append(cookieNames, c.Name)
@@ -110,7 +139,8 @@ func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, sto
 			http.Error(w, "state not found", http.StatusBadRequest)
 			return
 		}
-		if r.URL.Query().Get("state") != state.Value {
+		if !contains(states, r.URL.Query().Get("state")) {
+			log.Printf("State mismatch: %d state cookie(s) received, none matches query", len(states))
 			http.Error(w, "state did not match", http.StatusBadRequest)
 			return
 		}
@@ -131,12 +161,12 @@ func HandleCallback(oauth2Cnf oauth2.Config, verifier *oidc.IDTokenVerifier, sto
 			return
 		}
 
-		nonce, err := r.Cookie("nonce")
-		if err != nil {
+		nonces := cookieValues(r, "nonce")
+		if len(nonces) == 0 {
 			http.Error(w, "nonce not found", http.StatusBadRequest)
 			return
 		}
-		if idToken.Nonce != nonce.Value {
+		if !contains(nonces, idToken.Nonce) {
 			http.Error(w, "nonce did not match", http.StatusBadRequest)
 			return
 		}
