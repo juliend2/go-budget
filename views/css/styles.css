@@ -380,6 +380,21 @@ td {
 }
 
 /* Summary Row styling */
+.payday-header-row {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.payday-header-row td {
+  padding: 1rem 1.5rem;
+  border-top: 2px solid var(--glass-border);
+}
+
+.payday-header-row td strong {
+  font-size: 1.1rem;
+  color: var(--accent-amber);
+  text-shadow: 0 0 12px var(--accent-amber-glow);
+}
+
 .summary-row {
   background: rgba(15, 23, 42, 0.65);
 }
