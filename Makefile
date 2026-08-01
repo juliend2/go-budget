@@ -12,4 +12,6 @@ build:
 	go build -o budget main.go
 
 deploy: build
-	scp ./budget julien@budget.desrosiers.org:budget/budget
+	scp ./budget julien@budget.desrosiers.org:app
+	ssh -t julien@budget.desrosiers.org "rm -f budget/budget && cp app budget/budget && sudo chown www-data:www-data budget/budget && sudo systemctl restart budget"
+
