@@ -145,64 +145,7 @@ func seedData(ctx context.Context, repo *repository.MongoDBRepository) error {
 	log.Println("Seeding initial recurring templates...")
 
 	// Seed templates matching the user's checklist
-	seedTemplates := []*model.ExpenseTemplate{
-		model.NewExpenseTemplate(4, "(Apple) iCloud+",
-			model.WithInitialToBePaidOn(2026, time.July, 11),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(12, "Crave ( prime channels)",
-			model.WithInitialToBePaidOn(2026, time.July, 16),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(140, "Provision pour électricité",
-			model.WithInitialToBePaidOn(2026, time.July, 17),
-			model.WithRepeatabilityInterval(2, "W"), // every 2 weeks
-		),
-		model.NewExpenseTemplate(53, "Fizz",
-			model.WithInitialToBePaidOn(2026, time.July, 19),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(11, "(Apple) Apple Music",
-			model.WithInitialToBePaidOn(2026, time.July, 20),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(250, "Mensualité Orthodontiste d'Alice (CC)",
-			model.WithInitialToBePaidOn(2026, time.July, 22),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(1026, "Provision pour Loyer",
-			model.WithInitialToBePaidOn(2026, time.July, 22),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(500, "Épicerie",
-			model.WithInitialToBePaidOn(2026, time.July, 24),
-			model.WithRepeatabilityInterval(2, "W"), // every 2 weeks
-		),
-		model.NewExpenseTemplate(59, "Fido",
-			model.WithInitialToBePaidOn(2026, time.July, 26),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(100, "Visa Affaires SM - Marge de crédit",
-			model.WithInitialToBePaidOn(2026, time.July, 27),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(35, "SAAQ",
-			model.WithInitialToBePaidOn(2026, time.July, 27),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(100, "Passe STM du mois",
-			model.WithInitialToBePaidOn(2026, time.August, 1),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(146, "Assurances — Desjardins & Manuvie (dans compte de Julien)",
-			model.WithInitialToBePaidOn(2026, time.August, 2),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-		model.NewExpenseTemplate(120, "Intérêts sur prêt — Marge",
-			model.WithInitialToBePaidOn(2026, time.August, 3),
-			model.WithRepeatabilityInterval(1, "M"),
-		),
-	}
+	seedTemplates := []*model.ExpenseTemplate{}
 
 	for _, tpl := range seedTemplates {
 		tpl.ID = primitive.NewObjectID()
@@ -214,10 +157,7 @@ func seedData(ctx context.Context, repo *repository.MongoDBRepository) error {
 	log.Println("Seeding initial one-time expenses...")
 
 	// Seed one-time expenses
-	seedExpenses := []*model.Expense{
-		model.NewExpense(348, model.Date(2026, time.July, 10), model.WithDescription("Épicerie")),
-		model.NewExpense(0, model.Date(2026, time.July, 14), model.WithDescription("Café")),
-	}
+	seedExpenses := []*model.Expense{}
 
 	for _, exp := range seedExpenses {
 		_, err := repo.InsertOneTimeExpense(ctx, exp)
