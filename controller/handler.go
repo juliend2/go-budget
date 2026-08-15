@@ -66,8 +66,9 @@ func HandleDashboard(repo *repository.MongoDBRepository, tmpl *template.Template
 		// 3. Get paydays list
 		payDays := model.GetPayDays(dateRange)
 
-		// 4. Group expenses
+		// 4. Group expenses, hiding what has already been settled on past pays
 		grouped := model.PutExpensesInTheirPayPeriods(payDays, expenses)
+		grouped = model.FilterOutPaidExpensesFromPastPays(payDays, grouped, time.Now())
 
 		// 5. Structure period views chronologically
 		var periods []PeriodView

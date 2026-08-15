@@ -145,6 +145,72 @@ func TestPutExpensesInTheirPayPeriods_PayDayStartsItsOwnPeriod(t *testing.T) {
 	}
 }
 
+func TestFilterOutPaidExpensesFromPastPays(t *testing.T) {
+	// Arrange: today is 2026-08-20, so the pay starting 2026-07-31 is over,
+	// the one starting 2026-08-15 is the current one.
+	now := model.Date(2026, time.August, 20)
+	payDays := []time.Time{
+		model.Date(2026, time.July, 31),
+		model.Date(2026, time.August, 15),
+		model.Date(2026, time.August, 31),
+	}
+
+	paidPast := paidExpense(60, model.Date(2026, time.August, 1))
+	unpaidPast := model.NewExpense(70, model.Date(2026, time.August, 2))
+	paidCurrent := paidExpense(80, model.Date(2026, time.August, 16))
+
+	grouped := model.PutExpensesInTheirPayPeriods(payDays, []*model.Expense{
+		paidPast, unpaidPast, paidCurrent,
+	})
+
+	// Act
+	grouped = model.FilterOutPaidExpensesFromPastPays(payDays, grouped, now)
+
+	// Assert
+	past := grouped["2026-07-31"]
+	if len(past) != 1 {
+		t.Fatalf("elapsed pay should only keep what is still owed; got %d expenses", len(past))
+	}
+	if past[0] != unpaidPast {
+		t.Errorf("elapsed pay kept the wrong expense: %v", past[0])
+	}
+
+	if got := len(grouped["2026-08-15"]); got != 1 {
+		t.Errorf("current pay should still show its paid expenses; got %d", got)
+	}
+}
+
+func TestFilterOutPaidExpensesFromPastPays_KeepsThePayEndingToday(t *testing.T) {
+	// A pay period is only over once its end date is reached: on 2026-08-15 the
+	// pay starting 2026-07-31 has just ended, and the new one starts.
+	now := model.Date(2026, time.August, 15)
+	payDays := []time.Time{
+		model.Date(2026, time.July, 31),
+		model.Date(2026, time.August, 15),
+	}
+
+	grouped := model.PutExpensesInTheirPayPeriods(payDays, []*model.Expense{
+		paidExpense(60, model.Date(2026, time.August, 1)),
+	})
+
+	grouped = model.FilterOutPaidExpensesFromPastPays(payDays, grouped, now)
+
+	if got := len(grouped["2026-07-31"]); got != 0 {
+		t.Errorf("pay ending today is over; its paid expenses should be hidden, got %d", got)
+	}
+}
+
+// paidExpense builds an expense that is fully covered by a single payment.
+func paidExpense(amount int, toBePaidAt time.Time) *model.Expense {
+	id := primitive.NewObjectID()
+	return model.NewExpense(amount, toBePaidAt,
+		model.WithID(id),
+		model.WithPayments([]model.Payment{
+			{ExpenseID: id, Amount: amount, PaidAt: toBePaidAt},
+		}),
+	)
+}
+
 func TestPutExpensesInTheirPayPeriods_OverdueUnpaidCarriedForward(t *testing.T) {
 	// Arrange
 	payDays := []time.Time{

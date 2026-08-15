@@ -117,6 +117,41 @@ func GetPayDays(dateRange DateRange) []time.Time {
 	return dates
 }
 
+// FilterOutPaidExpensesFromPastPays drops fully paid expenses from the pay
+// periods that have already elapsed: once a pay is over, what was paid on it is
+// settled and only what is still owed is worth looking at. The current and
+// upcoming pay periods keep their paid expenses so the pay we are living in
+// still shows the full picture.
+func FilterOutPaidExpensesFromPastPays(pays []time.Time, grouped map[string][]*Expense, now time.Time) map[string][]*Expense {
+	today := carbon.NewCarbon(now).StartOfDay()
+
+	for i := 0; i < len(pays)-1; i++ {
+		from := carbon.NewCarbon(pays[i]).StartOfDay()
+		to := carbon.NewCarbon(pays[i+1]).StartOfDay()
+
+		// The period [from, to) is over only once its end has been reached.
+		if to.Gt(today) {
+			continue
+		}
+
+		key := from.ToDateString()
+		exps, ok := grouped[key]
+		if !ok {
+			continue
+		}
+
+		unpaid := make([]*Expense, 0, len(exps))
+		for _, exp := range exps {
+			if !exp.IsPaid() {
+				unpaid = append(unpaid, exp)
+			}
+		}
+		grouped[key] = unpaid
+	}
+
+	return grouped
+}
+
 func PutExpensesInTheirPayPeriods(pays []time.Time, exps []*Expense) map[string][]*Expense {
 	acc := make(map[string][]*Expense)
 	if len(pays) == 0 {
