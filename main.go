@@ -115,6 +115,7 @@ func main() {
 	http.HandleFunc("/expense/pay", controller.RequireAuth(sessions, controller.HandleExpensePay(repo, tmplPay)))
 	http.HandleFunc("/expense/edit", controller.RequireAuth(sessions, controller.HandleExpenseEdit(repo, tmplEdit)))
 	http.HandleFunc("/expense/add", controller.RequireAuth(sessions, controller.HandleAddExpense(repo)))
+	http.HandleFunc("/expense/delete", controller.RequireAuth(sessions, controller.HandleDeleteExpense(repo)))
 	http.HandleFunc("/template/add", controller.RequireAuth(sessions, controller.HandleAddTemplate(repo)))
 	http.HandleFunc("/templates", controller.RequireAuth(sessions, controller.HandleTemplatesList(repo, tmplTemplates)))
 	http.HandleFunc("/template/edit", controller.RequireAuth(sessions, controller.HandleTemplateEdit(repo, tmplTemplateEdit)))

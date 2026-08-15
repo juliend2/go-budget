@@ -300,6 +300,16 @@ func (r *MongoDBRepository) UpdateExpense(ctx context.Context, exp *model.Expens
 	return err
 }
 
+// DeleteExpense removes an expense along with the payments made toward it, so
+// no orphan payment is left behind.
+func (r *MongoDBRepository) DeleteExpense(ctx context.Context, id primitive.ObjectID) error {
+	if _, err := r.payments.DeleteMany(ctx, bson.M{"expense_id": id}); err != nil {
+		return err
+	}
+	_, err := r.expenses.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
 /* * * * * * *
  * Payments  *
  * * * * * * */

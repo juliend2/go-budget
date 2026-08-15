@@ -40,6 +40,15 @@
             background: rgba(255, 255, 255, 0.05);
             color: var(--text-primary);
         }
+        /* Same danger colors as the list's "Suppr" button, sized like the
+           form's own buttons since it sits on its own row underneath. */
+        .btn-delete-wide {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -74,6 +83,11 @@
                     <a href="/" class="btn-cancel">Annuler</a>
                     <button type="submit" class="btn">Enregistrer les modifications</button>
                 </div>
+            </form>
+
+            <form action="/expense/delete" method="POST" onsubmit="return confirm('Supprimer cette dépense ainsi que les paiements déjà enregistrés ?');">
+                <input type="hidden" name="expense_id" value="{{.Expense.ID.Hex}}">
+                <button type="submit" class="btn-delete btn-delete-wide"><i class="fa-solid fa-trash"></i> Supprimer</button>
             </form>
         </div>
     </div>

@@ -275,6 +275,28 @@ func HandleExpenseEdit(repo *repository.MongoDBRepository, tmpl *template.Templa
 	}
 }
 
+func HandleDeleteExpense(repo *repository.MongoDBRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		id, err := primitive.ObjectIDFromHex(r.FormValue("expense_id"))
+		if err != nil {
+			http.Error(w, "Invalid expense ID", http.StatusBadRequest)
+			return
+		}
+
+		if err := repo.DeleteExpense(r.Context(), id); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to delete expense: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
 func HandleAddExpense(repo *repository.MongoDBRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
