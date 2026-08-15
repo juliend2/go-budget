@@ -13,7 +13,7 @@ import (
 const sessionCookieName = "session"
 
 // sessionTTL is how long a session stays valid after login.
-const sessionTTL = 24 * time.Hour
+const sessionTTL = 24 * time.Hour * 7 // how many days
 
 // SessionRepository is the persistence the session store needs. It is satisfied
 // by *repository.MongoDBRepository.
