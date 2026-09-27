@@ -9,6 +9,9 @@ App de budgeting.
 make install
 ```
 
+Installs the required apt packages and a Go toolchain matching the version in
+`go.mod`, then downloads the Go modules.
+
 ## Environment variables
 
 - `GOOGLE_OAUTH2_CLIENT_ID`: required
@@ -34,10 +37,6 @@ make install
     ```bash
     sudo systemctl status budget
     ```
-
-## Security
-
-See [security-audit.md](security-audit.md) for the latest security audit findings.
 
 ## TODO
 

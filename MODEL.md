@@ -57,4 +57,7 @@ Tracks payments made toward individual expenses. An expense can be paid in full 
 ## 🐳 4. Database & Deployment Strategy
 
 * **Database**: MongoDB.
-* **Deployment**: Docker Compose (`docker-compose.yaml`) for local development, designed to be easily deployed to production.
+* **Local development**: `make mongo-local-install` + `make mongo-local` run
+  MongoDB 4.4 from a tarball under `~/mongodb-budget`.
+* **Deployment**: `make deploy` builds the binary and ships it to
+  the prod host, where it runs as the `budget` systemd service.
