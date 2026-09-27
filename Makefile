@@ -9,8 +9,7 @@ install: packages go-toolchain
 
 packages:
 	sudo apt-get update
-	sudo apt-get install -y docker.io docker-compose openssh-client
-	@id -nG "$$USER" | grep -qw docker || sudo usermod -aG docker "$$USER"
+	sudo apt-get install -y openssh-client
 
 go-toolchain:
 	@if command -v go >/dev/null 2>&1 && go version | grep -q "go$(GO_VERSION) "; then \
@@ -21,11 +20,19 @@ go-toolchain:
 		sudo tar -C /usr/local -xzf /tmp/opencode/$(GO_TARBALL); \
 	fi
 
-run:
-	OAUTH2_REDIRECT_URL=http://127.0.0.1:8080/auth/google/callback go run main.go
+MONGO_URI ?= mongodb://localhost:27027
 
-mongo:
-	docker compose up
+run:
+	OAUTH2_REDIRECT_URL=http://127.0.0.1:8080/auth/google/callback MONGO_URI=$(MONGO_URI) go run main.go
+
+mongo-local-install:
+	bash scripts/install-local-mongo.sh
+
+mongo-local:
+	LD_LIBRARY_PATH=$(HOME)/mongodb-budget/lib $(HOME)/mongodb-budget/bin/mongod --dbpath $(HOME)/mongodb-budget/data --port 27027 --bind_ip 127.0.0.1 --fork --logpath $(HOME)/mongodb-budget/mongod.log
+
+mongo-local-stop:
+	pkill -f "dbpath $(HOME)/mongodb-budget/data" || true
 
 test:
 	go test ./model/
