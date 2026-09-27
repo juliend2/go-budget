@@ -36,11 +36,14 @@ func nextPayDateAfter(t *carbon.Carbon) *carbon.Carbon {
 	if d.Day() < 15 {
 		return d.SetDay(15)
 	}
-	// last day of the current month at 00:00:00
-	lastDay := d.AddMonth().StartOfMonth().SubDay()
+	// last day of the current month at 00:00:00. EndOfMonth never overflows
+	// (day 0 of next month), unlike AddMonth() which normalizes e.g.
+	// Aug 31 + 1 month into Oct 1 and breaks the whole chain.
+	lastDay := d.EndOfMonth().StartOfDay()
 	if d.Day() < lastDay.Day() {
 		return lastDay
 	}
-	// d is the last day of the month -> 15th of next month
-	return d.AddMonth().SetDay(15)
+	// d is the last day of the month -> 15th of next month.
+	// AddMonthNoOverflow so Jan 31 + 1 month lands on Feb 28/29, not Mar 3.
+	return d.AddMonthNoOverflow().SetDay(15)
 }
