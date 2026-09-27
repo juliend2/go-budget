@@ -3,19 +3,11 @@ README
 
 App de budgeting.
 
-## MongoDB
+## Installation
 
-### Data folder
-
-To see where your data is being saved on the host's system:
-
-```bash
-docker volume inspect budget_mongo-data
 ```
-
-This will show you a JSON object, and you'll see a path under the `Mountpoint` property.
-
-In my case, it's pointing to `/var/lib/docker/volumes/budget_mongo-data/_data`
+make install
+```
 
 ## Environment variables
 
